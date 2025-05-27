@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP4実寸解析アプリ (高精度・進路分析)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f3f4f6; /* Lighter background for container */
+            border: 1px solid #d1d5db; /* Add border to container */
+            border-radius: 0.5rem;
+            padding: 8px; /* Add padding around video */
+        }
+        #videoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            pointer-events: none; /* Default to none, JS will manage */
+            background-color: transparent;
+            display: none; /* Initially hidden, JS will manage */
+        }        #videoPlayer {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            min-height: 300px; /* Increased height for better visibility */
+            background-color: #000000; /* Black background for video player */
+            border: 2px solid #e5e7eb; /* Add border to make player visible */
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        .button-loader {
+            width: 20px;
+            height: 20px;
+            border-width: 2px;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .zoom-controls button, .mode-controls button {
+            min-width: 40px;
+        }
+        .mode-button.active {
+            background-color: #4f46e5; /* bg-indigo-600 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">MP4実寸解析アプリ</h1>
+            <p class="text-gray-600 mt-2" id="appSubtitle">ズーム＆パン機能でより正確に！AIもコメントします。</p>
+        </header>
+
+        <div class="mb-6">
+            <label for="videoFile" class="block text-sm font-medium text-gray-700 mb-1">MP4ファイルを選択:</label>
+            <input type="file" id="videoFile" accept="video/mp4" class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100 transition-colors duration-150"/>
+        </div>        <div id="videoArea" class="mb-6 video-container">
+            <video id="videoPlayer" controls>
+                <p class="text-center text-gray-500 p-4">動画ファイルを選択すると、ここに表示されます。</p>
+            </video>
+            <canvas id="videoCanvas"></canvas>
+        </div>
+        
+        <div id="loadingIndicator" class="hidden items-center justify-center mb-4">
+            <div class="loader"></div><span class="text-gray-600">動画を処理中...</span>
+        </div>
+
+        <div id="modeSelectionContainer" class="mb-4 flex space-x-2 hidden">
+            <button id="dimensionModeButton" class="mode-button flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition-colors">寸法測定モード</button>
+            <button id="oncomingAnalysisModeButton" class="mode-button flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition-colors">対向車進路分析モード</button>
+        </div>
+        
+        <div id="dimensionControlsArea" class="mb-6 hidden">
+            <button id="startDimensionMeasurementButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors duration-150 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                現在のフレームで寸法測定開始
+            </button>
+        </div>
+
+        <div id="oncomingAnalysisControlsArea" class="mb-6 hidden space-y-3">
+             <p id="oncomingAnalysisInstructionText" class="text-sm text-purple-700 font-semibold bg-purple-50 p-3 rounded-md"></p>
+            <button id="captureFrameButton" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150">
+                このフレームをキャプチャ
+            </button>
+            <button id="startVehicleMarkingButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 hidden">
+                この車両をマーク
+            </button>
+        </div>
+
+
+        <div id="sharedControlsContainer" class="mb-6 hidden">
+            <div id="zoomControlsContainer" class="mb-3 p-3 bg-gray-100 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 mb-1">表示操作:</label>
+                <div class="flex items-center justify-center space-x-2 zoom-controls">
+                    <button id="zoomOutButton" title="ズームアウト" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-md shadow transition-colors">-</button>
+                    <button id="zoomResetButton" title="ズームリセット" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md shadow transition-colors">リセット</button>
+                    <button id="zoomInButton" title="ズームイン" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-md shadow transition-colors">+</button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 text-center">ズーム後、画像をドラッグして表示範囲を移動できます。</p>
+            </div>
+
+            <div id="dimensionMeasurementInputs" class="space-y-4"> <div>
+                    <label for="refObjectActualSize" class="block text-sm font-medium text-gray-700">参照オブジェクトの実際のサイズ (mm):</label>
+                    <input type="number" id="refObjectActualSize" placeholder="例: 100" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <p id="commonInstructionText" class="text-sm text-indigo-600 font-semibold bg-indigo-50 p-3 rounded-md"></p>
+            </div>
+        </div>
+
+
+        <div id="resultsArea" class="bg-gray-50 p-4 rounded-lg shadow hidden">
+            <div id="dimensionResultsDisplay" class="hidden">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">寸法測定結果:</h2>
+                <div class="space-y-2 text-sm mb-4">
+                    <p><strong>状態:</strong> <span id="dimensionStatusText" class="text-gray-600">待機中</span></p>
+                    <p><strong>参照オブジェクトのピクセル長:</strong> <span id="refPixelLengthText" class="text-gray-600">-</span> px</p>
+                    <p><strong>スケール (mm/pixel):</strong> <span id="scaleText" class="text-gray-600">-</span></p>
+                    <p><strong>対象オブジェクトのピクセル長:</strong> <span id="targetPixelLengthText" class="text-gray-600">-</span> px</p>
+                    <p class="text-lg font-bold text-green-600"><strong>推定実寸:</strong> <span id="estimatedSizeText">-</span> mm</p>
+                </div>
+                <div id="aiCommentSection" class="mt-4 pt-4 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">✨ AIによるコメント</h3>
+                    <div>
+                        <label for="targetObjectNameInput" class="block text-sm font-medium text-gray-700">測定対象物の名前 (任意):</label>
+                        <input type="text" id="targetObjectNameInput" placeholder="例: スマートフォン" class="mt-1 mb-2 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <button id="getAiCommentButton" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 disabled:opacity-50" disabled>
+                        <span id="aiButtonLoader" class="loader button-loader hidden"></span>コメントを生成 ✨
+                    </button>
+                    <p id="aiCommentText" class="mt-2 text-sm text-gray-600 bg-purple-50 p-3 rounded-md min-h-[40px]"></p>
+                </div>
+            </div>
+            <div id="oncomingAnalysisResultsDisplay" class="hidden">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">対向車進路分析結果:</h2>
+                <div class="space-y-2 text-sm">
+                    <p><strong>状態:</strong> <span id="oncomingStatusText" class="text-gray-600">待機中</span></p>
+                    <p><strong>1回目マーク時の車両角度:</strong> <span id="vehicleAngle1Text">-</span> °</p>
+                    <p><strong>2回目マーク時の車両角度:</strong> <span id="vehicleAngle2Text">-</span> °</p>
+                    <p class="text-lg font-bold text-red-600"><strong>角度変化 (2回目 - 1回目):</strong> <span id="angleChangeText">-</span> °</p>
+                    <p><strong>フレーム間時間差:</strong> <span id="timeDiffText">-</span> 秒</p>
+                </div>
+            </div>
+            <button id="resetCurrentModeButton" class="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                現在のモードをリセット
+            </button>
+        </div>
+        
+        <div id="messageBox" class="hidden fixed top-5 right-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md z-50" role="alert">
+            <strong class="font-bold">エラー: </strong><span class="block sm:inline" id="messageText"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <svg id="closeMessageButton" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+            </span>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const videoFile = document.getElementById('videoFile');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoCanvas = document.getElementById('videoCanvas');
+        const videoArea = document.getElementById('videoArea');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const closeMessageButton = document.getElementById('closeMessageButton');
+        const appSubtitle = document.getElementById('appSubtitle');
+
+        // Mode Selection
+        const modeSelectionContainer = document.getElementById('modeSelectionContainer');
+        const dimensionModeButton = document.getElementById('dimensionModeButton');
+        const oncomingAnalysisModeButton = document.getElementById('oncomingAnalysisModeButton');
+
+        // Dimension Measurement Controls & Inputs
+        const dimensionControlsArea = document.getElementById('dimensionControlsArea');
+        const startDimensionMeasurementButton = document.getElementById('startDimensionMeasurementButton');
+        const dimensionMeasurementInputs = document.getElementById('dimensionMeasurementInputs'); 
+        const refObjectActualSizeInput = document.getElementById('refObjectActualSize');
+        const commonInstructionText = document.getElementById('commonInstructionText'); 
+
+        // Oncoming Vehicle Analysis Controls & Inputs
+        const oncomingAnalysisControlsArea = document.getElementById('oncomingAnalysisControlsArea');
+        const oncomingAnalysisInstructionText = document.getElementById('oncomingAnalysisInstructionText');
+        const captureFrameButton = document.getElementById('captureFrameButton'); 
+        const startVehicleMarkingButton = document.getElementById('startVehicleMarkingButton'); 
+        
+        // Shared Controls (Zoom)
+        const sharedControlsContainer = document.getElementById('sharedControlsContainer'); 
+        const zoomControlsContainer = document.getElementById('zoomControlsContainer');
+        const zoomInButton = document.getElementById('zoomInButton');
+        const zoomOutButton = document.getElementById('zoomOutButton');
+        const zoomResetButton = document.getElementById('zoomResetButton');
+
+        // Results Area
+        const resultsArea = document.getElementById('resultsArea');
+        const resetCurrentModeButton = document.getElementById('resetCurrentModeButton');
+        // Dimension Results
+        const dimensionResultsDisplay = document.getElementById('dimensionResultsDisplay');
+        const dimensionStatusText = document.getElementById('dimensionStatusText');
+        const refPixelLengthText = document.getElementById('refPixelLengthText');
+        const scaleText = document.getElementById('scaleText');
+        const targetPixelLengthText = document.getElementById('targetPixelLengthText');
+        const estimatedSizeText = document.getElementById('estimatedSizeText');
+        // AI Comment
+        const aiCommentSection = document.getElementById('aiCommentSection');
+        const targetObjectNameInput = document.getElementById('targetObjectNameInput');
+        const getAiCommentButton = document.getElementById('getAiCommentButton');
+        const aiButtonLoader = document.getElementById('aiButtonLoader');
+        const aiCommentText = document.getElementById('aiCommentText');
+        // Oncoming Analysis Results
+        const oncomingAnalysisResultsDisplay = document.getElementById('oncomingAnalysisResultsDisplay');
+        const oncomingStatusText = document.getElementById('oncomingStatusText');
+        const vehicleAngle1Text = document.getElementById('vehicleAngle1Text');
+        const vehicleAngle2Text = document.getElementById('vehicleAngle2Text');
+        const angleChangeText = document.getElementById('angleChangeText');
+        const timeDiffText = document.getElementById('timeDiffText');
+
+        // Canvas contexts
+        const visibleCtx = videoCanvas.getContext('2d');
+        const sourceFrameCanvas = document.createElement('canvas'); // Offscreen
+        const sourceFrameCtx = sourceFrameCanvas.getContext('2d');
+
+        // --- State Variables ---
+        let currentAppMode = 'none'; 
+        let measurementState = 'idle'; 
+        
+        let points = []; 
+        let pointsForRefLine = []; 
+        let pointsForTargetLine = [];
+        let refPixelLength = 0;
+        let scale = 0;
+        let currentEstimatedSizeMm = 0;
+
+        let vehicleSnapshot1 = { points: [], time: 0, angle: null, midPoint: null, frameCaptured: false };
+        let vehicleSnapshot2 = { points: [], time: 0, angle: null, midPoint: null, frameCaptured: false };
+        let oncomingMarkingStep = 0; 
+
+        let videoNaturalWidth = 0, videoNaturalHeight = 0;
+        let zoomLevel = 1.0;
+        const MIN_ZOOM = 0.5, MAX_ZOOM = 10.0, ZOOM_STEP = 0.2;
+        let viewOffsetX = 0, viewOffsetY = 0;
+        let isPanning = false, lastPanX = 0, lastPanY = 0;
+
+
+        // --- Helper Functions (Moved Up) ---
+        function showUIMessage(element, text) {
+            element.textContent = text;
+        }
+        function showMessage(message, isError = true) {  
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+            messageBox.classList.toggle('bg-red-100', isError); messageBox.classList.toggle('border-red-400', isError); messageBox.classList.toggle('text-red-700', isError);
+            messageBox.classList.toggle('bg-green-100', !isError); messageBox.classList.toggle('border-green-400', !isError); messageBox.classList.toggle('text-green-700', !isError);
+            messageBox.querySelector('strong').textContent = isError ? "エラー: " : "情報: ";
+        }
+        
+        function drawPointOnCanvas(dispX, dispY, color = 'yellow', radius = 5) {
+            visibleCtx.fillStyle = color;
+            visibleCtx.beginPath();
+            visibleCtx.arc(dispX, dispY, radius / zoomLevel, 0, Math.PI * 2); 
+            visibleCtx.fill();
+        }
+
+        function drawLineOnCanvas(dispP1, dispP2, color = 'blue', lineWidth = 2) {
+            visibleCtx.strokeStyle = color;
+            visibleCtx.lineWidth = lineWidth / zoomLevel; 
+            visibleCtx.beginPath();
+            visibleCtx.moveTo(dispP1.x, dispP1.y);
+            visibleCtx.lineTo(dispP2.x, dispP2.y);
+            visibleCtx.stroke();
+        }
+        
+        function toDisplayCoords(imageCoords) {
+            if (!imageCoords) return null;
+            const displayX = (imageCoords.x - viewOffsetX) * zoomLevel;
+            const displayY = (imageCoords.y - viewOffsetY) * zoomLevel;
+            return { x: displayX, y: displayY };
+        }
+
+        function toImageCoords(canvasCoords) {
+            const imageX = (canvasCoords.x / zoomLevel) + viewOffsetX;
+            const imageY = (canvasCoords.y / zoomLevel) + viewOffsetY;
+            return { x: imageX, y: imageY };
+        }
+
+        function calculateDistance(p1, p2) { 
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+        function calculateAngle(p1, p2) { 
+            if (!p1 || !p2) return null;
+            const angleRad = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            return angleRad * 180 / Math.PI;
+        }
+
+
+        // --- Initialization and Event Listeners ---
+        closeMessageButton.addEventListener('click', () => messageBox.classList.add('hidden'));
+
+        videoFile.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {                loadingIndicator.classList.remove('hidden'); loadingIndicator.classList.add('flex');
+                const fileURL = URL.createObjectURL(file);
+                videoPlayer.src = fileURL;
+                // videoArea is now always visible, no need to show it
+                modeSelectionContainer.classList.remove('hidden');
+                dimensionControlsArea.classList.add('hidden');
+                oncomingAnalysisControlsArea.classList.add('hidden');
+                startVehicleMarkingButton.classList.add('hidden');
+                sharedControlsContainer.classList.add('hidden');
+                resultsArea.classList.add('hidden');
+                dimensionResultsDisplay.classList.add('hidden');
+                oncomingAnalysisResultsDisplay.classList.add('hidden');
+                
+                resetAllApplicationStates(); 
+
+                videoPlayer.onloadedmetadata = () => {
+                    videoNaturalWidth = videoPlayer.videoWidth;
+                    videoNaturalHeight = videoPlayer.videoHeight;
+                    sourceFrameCanvas.width = videoNaturalWidth; sourceFrameCanvas.height = videoNaturalHeight;
+                    const displayWidth = videoPlayer.clientWidth; const displayHeight = videoPlayer.clientHeight;
+                    videoCanvas.width = displayWidth; videoCanvas.height = displayHeight;
+                    videoCanvas.style.width = `${displayWidth}px`; videoCanvas.style.height = `${displayHeight}px`;
+                    videoCanvas.style.pointerEvents = 'none';
+                    videoCanvas.style.display = 'none'; 
+                    loadingIndicator.classList.add('hidden'); loadingIndicator.classList.remove('flex');
+                    resetZoomAndPan();
+                    setAppMode('none'); 
+                };
+                videoPlayer.onerror = () => {
+                    showMessage("動画ファイルの読み込みに失敗しました。");
+                    loadingIndicator.classList.add('hidden'); loadingIndicator.classList.remove('flex');
+                };
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (videoPlayer.src && videoPlayer.readyState >= 2) {
+                 const displayWidth = videoPlayer.clientWidth; const displayHeight = videoPlayer.clientHeight;
+                 videoCanvas.width = displayWidth; videoCanvas.height = displayHeight;
+                 videoCanvas.style.width = `${displayWidth}px`; videoCanvas.style.height = `${displayHeight}px`;
+                 if (measurementState !== 'idle' && sharedControlsContainer.classList.contains('hidden') === false && videoCanvas.style.display === 'block') {
+                    applyPanBoundaries();
+                    redrawDisplayCanvas();
+                 }
+            }
+        });
+
+        // --- Mode Switching ---
+        dimensionModeButton.addEventListener('click', () => setAppMode('dimension'));
+        oncomingAnalysisModeButton.addEventListener('click', () => setAppMode('oncoming'));
+
+        function setAppMode(mode) {
+            currentAppMode = mode;
+            resetAllMeasurementStates(); 
+            
+            dimensionModeButton.classList.toggle('active', mode === 'dimension');
+            oncomingAnalysisModeButton.classList.toggle('active', mode === 'oncoming');
+
+            dimensionControlsArea.classList.toggle('hidden', mode !== 'dimension');
+            oncomingAnalysisControlsArea.classList.toggle('hidden', mode !== 'oncoming');
+            startVehicleMarkingButton.classList.add('hidden');
+            
+            dimensionMeasurementInputs.classList.toggle('hidden', mode !== 'dimension');
+            zoomControlsContainer.classList.add('hidden'); 
+            
+            sharedControlsContainer.classList.add('hidden'); 
+            resultsArea.classList.add('hidden'); 
+            dimensionResultsDisplay.classList.add('hidden');
+            oncomingAnalysisResultsDisplay.classList.add('hidden');
+            
+            videoCanvas.style.display = 'none'; 
+            videoCanvas.style.pointerEvents = 'none'; 
+            videoCanvas.style.cursor = 'default';
+            if(visibleCtx) visibleCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height); 
+
+            if (mode === 'dimension') {
+                appSubtitle.textContent = "寸法測定モード: 参照物を使って長さを測ります。";
+                showUIMessage(commonInstructionText, "動画を一時停止し、「現在のフレームで寸法測定開始」を押してください。");
+            } else if (mode === 'oncoming') {
+                appSubtitle.textContent = "対向車進路分析モード: 2フレーム間の車両の向きの変化を分析します。";
+                showUIMessage(oncomingAnalysisInstructionText, "分析したい最初のフレームで動画を一時停止し、「このフレームをキャプチャ (1回目)」を押してください。");
+                captureFrameButton.textContent = "このフレームをキャプチャ (1回目)";
+                oncomingMarkingStep = 0; 
+            } else {
+                appSubtitle.textContent = "モードを選択してください。";
+            }
+        }
+        
+        // --- Dimension Measurement Logic ---
+        startDimensionMeasurementButton.addEventListener('click', () => {
+            if (!videoPlayer.src || videoPlayer.paused === false) { showMessage("動画を一時停止してください。"); return; }
+            if (videoPlayer.readyState < 2) { showMessage("動画データ未読込。"); return; }
+            videoPlayer.pause();
+            
+            sourceFrameCtx.clearRect(0, 0, sourceFrameCanvas.width, sourceFrameCanvas.height);
+            sourceFrameCtx.drawImage(videoPlayer, 0, 0, videoNaturalWidth, videoNaturalHeight);
+
+            videoCanvas.style.display = 'block'; 
+            videoCanvas.style.pointerEvents = 'auto';
+            videoCanvas.style.cursor = 'crosshair';
+            sharedControlsContainer.classList.remove('hidden'); 
+            zoomControlsContainer.classList.remove('hidden');
+            dimensionMeasurementInputs.classList.remove('hidden'); 
+            resultsArea.classList.remove('hidden');
+            dimensionResultsDisplay.classList.remove('hidden');
+            oncomingAnalysisResultsDisplay.classList.add('hidden');
+            
+            showUIMessage(commonInstructionText, "参照オブジェクトの実際のサイズを入力し、参照オブジェクトの始点と終点をクリックしてください。");
+            showUIMessage(dimensionStatusText, "参照オブジェクトのサイズ入力待ち");
+            measurementState = 'dim_waiting_ref1';
+            points = []; pointsForRefLine = []; pointsForTargetLine = [];
+            resetZoomAndPan();
+            updateDimensionResultsDisplay();
+            redrawDisplayCanvas();
+        });
+
+        // --- Oncoming Vehicle Analysis Logic ---
+        captureFrameButton.addEventListener('click', () => {
+            if (!videoPlayer.src || videoPlayer.paused === false) { showMessage("動画を一時停止してください。"); return; }
+            if (videoPlayer.readyState < 2) { showMessage("動画データ未読込。"); return; }
+            videoPlayer.pause();            sourceFrameCtx.clearRect(0, 0, sourceFrameCanvas.width, sourceFrameCanvas.height);
+            sourceFrameCtx.drawImage(videoPlayer, 0, 0, videoNaturalWidth, videoNaturalHeight);
+            
+            // Keep canvas hidden during capture, only show during marking
+            videoCanvas.style.display = 'none'; 
+            videoCanvas.style.pointerEvents = 'none'; 
+            videoCanvas.style.cursor = 'default';
+
+            sharedControlsContainer.classList.remove('hidden'); 
+            zoomControlsContainer.classList.remove('hidden');
+            dimensionMeasurementInputs.classList.add('hidden'); 
+            resultsArea.classList.remove('hidden'); 
+            oncomingAnalysisResultsDisplay.classList.remove('hidden');
+            dimensionResultsDisplay.classList.add('hidden');
+
+            if (oncomingMarkingStep < 1) { 
+                oncomingMarkingStep = 0.5; 
+                vehicleSnapshot1.frameCaptured = true;
+                vehicleSnapshot1.points = []; 
+                showUIMessage(oncomingAnalysisInstructionText, "フレーム1をキャプチャしました。良ければ「この車両をマーク(1回目)」を押してマーキングを開始してください。フレームを調整する場合は再度キャプチャしてください。");
+                startVehicleMarkingButton.textContent = "この車両をマーク (1回目)";
+                startVehicleMarkingButton.classList.remove('hidden');
+                captureFrameButton.textContent = "このフレームを再キャプチャ (1回目)";
+            } else if (oncomingMarkingStep >= 1 && oncomingMarkingStep < 2) { 
+                oncomingMarkingStep = 1.7; 
+                vehicleSnapshot2.frameCaptured = true;
+                vehicleSnapshot2.points = []; 
+                showUIMessage(oncomingAnalysisInstructionText, "フレーム2をキャプチャしました。良ければ「この車両をマーク(2回目)」を押してマーキングを開始してください。フレームを調整する場合は再度キャプチャしてください。");
+                startVehicleMarkingButton.textContent = "この車両をマーク (2回目)";
+                startVehicleMarkingButton.classList.remove('hidden');
+                captureFrameButton.textContent = "このフレームを再キャプチャ (2回目)";
+            } else if (oncomingMarkingStep === 3) { 
+                resetOncomingAnalysisState();
+                return; 
+            }
+            
+            resetZoomAndPan(); 
+            updateOncomingAnalysisResultsDisplay(); 
+            redrawDisplayCanvas(); 
+        });
+
+        startVehicleMarkingButton.addEventListener('click', () => {
+            videoCanvas.style.display = 'block'; 
+            videoCanvas.style.pointerEvents = 'auto';
+            videoCanvas.style.cursor = 'crosshair';
+            startVehicleMarkingButton.classList.add('hidden'); 
+            captureFrameButton.disabled = true; 
+
+            if (oncomingMarkingStep === 0.5) { 
+                oncomingMarkingStep = 1;
+                measurementState = 'oncoming_F1_P1_click';
+                points = []; 
+                showUIMessage(oncomingAnalysisInstructionText, "対向車両の代表的な2点 (例: 前面の両端) をクリックしてください (1回目)。");
+            } else if (oncomingMarkingStep === 1.7) { 
+                oncomingMarkingStep = 2;
+                measurementState = 'oncoming_F2_P1_click';
+                points = []; 
+                showUIMessage(oncomingAnalysisInstructionText, "同じ対向車両の対応する2点を再度クリックしてください (2回目)。");
+            }
+            redrawDisplayCanvas(); 
+        });
+
+
+        // --- Canvas Interaction: Click and Pan (Shared by modes) ---
+        videoCanvas.addEventListener('click', function(event) {
+            if (videoCanvas.style.pointerEvents === 'none' || isPanning) return;
+            if (measurementState === 'idle' && currentAppMode === 'none') return;
+
+            const rect = videoCanvas.getBoundingClientRect();
+            const canvasClickCoords = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+            const imageCoords = toImageCoords(canvasClickCoords); 
+            
+            points.push(imageCoords);
+            redrawDisplayCanvas(); 
+
+            if (currentAppMode === 'dimension') {
+                handleDimensionClickLogic();
+            } else if (currentAppMode === 'oncoming') {
+                handleOncomingAnalysisClickLogic();
+            }
+        });
+
+        function handleDimensionClickLogic() {
+            if (measurementState === 'dim_waiting_ref1') {
+                const refActualSize = parseFloat(refObjectActualSizeInput.value);
+                if (isNaN(refActualSize) || refActualSize <= 0) {
+                    showMessage("参照オブジェクトの実際のサイズを正しく入力してください。");
+                    points = []; redrawDisplayCanvas(); return;
+                }
+                showUIMessage(dimensionStatusText, "参照オブジェクトの終点待ち");
+                showUIMessage(commonInstructionText, "参照オブジェクトの終点をクリックしてください。");
+                measurementState = 'dim_waiting_ref2';
+            } else if (measurementState === 'dim_waiting_ref2') {
+                if (points.length === 2) {
+                    pointsForRefLine = [...points];
+                    refPixelLength = calculateDistance(pointsForRefLine[0], pointsForRefLine[1]);
+                    const refActualSize = parseFloat(refObjectActualSizeInput.value);
+                    if (refPixelLength > 0 && refActualSize > 0) {
+                        scale = refActualSize / refPixelLength;
+                        showUIMessage(dimensionStatusText, "スケール計算完了。対象オブジェクトの始点待ち。");
+                        showUIMessage(commonInstructionText, "測定したい対象オブジェクトの始点をクリックしてください。");
+                        measurementState = 'dim_waiting_target1';
+                        refPixelLengthText.textContent = refPixelLength.toFixed(2);
+                        scaleText.textContent = scale.toFixed(4);
+                        points = []; 
+                    } else { 
+                        showMessage("参照オブジェクトのピクセル長が0です。異なる2点をクリックしてください。");
+                        points = []; pointsForRefLine = []; measurementState = 'dim_waiting_ref1';
+                        showUIMessage(dimensionStatusText, "参照オブジェクトの始点待ち");
+                        showUIMessage(commonInstructionText, "参照オブジェクトの始点を再度クリックしてください。");
+                    }
+                    redrawDisplayCanvas();
+                }
+            } else if (measurementState === 'dim_waiting_target1') {
+                showUIMessage(dimensionStatusText, "対象オブジェクトの終点待ち");
+                showUIMessage(commonInstructionText, "測定したい対象オブジェクトの終点をクリックしてください。");
+                measurementState = 'dim_waiting_target2';
+            } else if (measurementState === 'dim_waiting_target2') {
+                if (points.length === 2) {
+                    pointsForTargetLine = [...points];
+                    const targetPixelLengthVal = calculateDistance(pointsForTargetLine[0], pointsForTargetLine[1]);
+                    if (scale > 0 && targetPixelLengthVal > 0) {
+                        currentEstimatedSizeMm = targetPixelLengthVal * scale;
+                        showUIMessage(dimensionStatusText, "測定完了");
+                        showUIMessage(commonInstructionText, "測定が完了しました。対象物の名前を入力してAIコメントを生成できます。");
+                        targetPixelLengthText.textContent = targetPixelLengthVal.toFixed(2);
+                        estimatedSizeText.textContent = currentEstimatedSizeMm.toFixed(2);
+                        measurementState = 'dim_done'; 
+                        aiCommentSection.classList.remove('hidden');
+                        getAiCommentButton.disabled = false;
+                        videoCanvas.style.pointerEvents = 'auto'; 
+                        videoCanvas.style.cursor = 'grab'; 
+                    } else { 
+                         showMessage("対象オブジェクトのピクセル長が0またはスケールが未設定です。");
+                         points = []; pointsForTargetLine = []; measurementState = 'dim_waiting_target1';
+                         showUIMessage(dimensionStatusText, "対象オブジェクトの始点待ち");
+                         showUIMessage(commonInstructionText, "対象オブジェクトの始点を再度クリックしてください。");
+                    }
+                    redrawDisplayCanvas();
+                }
+            }
+        }
+
+        function handleOncomingAnalysisClickLogic() {
+            if (measurementState === 'oncoming_F1_P1_click') { 
+                measurementState = 'oncoming_F1_P2_click';
+                 showUIMessage(oncomingAnalysisInstructionText, "対向車両の代表的な2点目 (例: 前面の右端) をクリックしてください (1回目)。");
+            } else if (measurementState === 'oncoming_F1_P2_click') { 
+                if (points.length === 2) {
+                    vehicleSnapshot1.points = [...points];
+                    vehicleSnapshot1.time = videoPlayer.currentTime;
+                    vehicleSnapshot1.angle = calculateAngle(points[0], points[1]);
+                    showUIMessage(oncomingStatusText, "1回目のマーク完了。");
+                    vehicleAngle1Text.textContent = vehicleSnapshot1.angle !== null ? vehicleSnapshot1.angle.toFixed(1) : '-';
+                      oncomingMarkingStep = 1.5; 
+                    showUIMessage(oncomingAnalysisInstructionText, "動画を数フレーム進め、同じ車両が見える次の重要フレームで一時停止し、「このフレームをキャプチャ (2回目)」を押してください。");
+                    measurementState = 'idle'; 
+                    points = [];
+                    captureFrameButton.textContent = "このフレームをキャプチャ (2回目)";
+                    captureFrameButton.disabled = false;
+                    startVehicleMarkingButton.classList.add('hidden');
+                    // Hide canvas to allow video playback
+                    videoCanvas.style.display = 'none'; 
+                    videoCanvas.style.pointerEvents = 'none'; 
+                    videoCanvas.style.cursor = 'default'; 
+                    redrawDisplayCanvas();
+                }
+            } else if (measurementState === 'oncoming_F2_P1_click') { 
+                measurementState = 'oncoming_F2_P2_click';
+                showUIMessage(oncomingAnalysisInstructionText, "同じ対向車両の対応する2点目をクリックしてください (2回目)。");
+            } else if (measurementState === 'oncoming_F2_P2_click') { 
+                if (points.length === 2) {
+                    vehicleSnapshot2.points = [...points];
+                    vehicleSnapshot2.time = videoPlayer.currentTime;
+                    vehicleSnapshot2.angle = calculateAngle(points[0], points[1]);
+                    
+                    showUIMessage(oncomingStatusText, "2回目のマーク完了。分析結果表示。");
+                    vehicleAngle2Text.textContent = vehicleSnapshot2.angle !== null ? vehicleSnapshot2.angle.toFixed(1) : '-';
+
+                    if (vehicleSnapshot1.angle !== null && vehicleSnapshot2.angle !== null) {
+                        let angleDiff = vehicleSnapshot2.angle - vehicleSnapshot1.angle;
+                        if (angleDiff > 180) angleDiff -= 360;
+                        if (angleDiff < -180) angleDiff += 360;
+                        angleChangeText.textContent = angleDiff.toFixed(1);
+                    } else {
+                        angleChangeText.textContent = '-';
+                    }
+                    timeDiffText.textContent = (vehicleSnapshot2.time - vehicleSnapshot1.time).toFixed(2);
+                      oncomingMarkingStep = 3; 
+                    measurementState = 'idle'; 
+                    points = [];
+                    captureFrameButton.textContent = "分析結果をクリアして再開";
+                    captureFrameButton.disabled = false;
+                    startVehicleMarkingButton.classList.add('hidden');
+                    // Hide canvas to allow video playback
+                    videoCanvas.style.display = 'none';
+                    videoCanvas.style.pointerEvents = 'none'; 
+                    videoCanvas.style.cursor = 'default'; 
+                    redrawDisplayCanvas();
+                }
+            }
+        }
+        
+        videoCanvas.addEventListener('mousedown', (e) => { 
+            if (videoCanvas.style.pointerEvents === 'auto' && zoomLevel > 1) { 
+                isPanning = true;
+                lastPanX = e.clientX;
+                lastPanY = e.clientY;
+                videoCanvas.style.cursor = 'grabbing';
+            }
+        });
+        videoCanvas.addEventListener('mousemove', (e) => { 
+            if (isPanning) {
+                const dx = e.clientX - lastPanX;
+                const dy = e.clientY - lastPanY;
+                viewOffsetX -= dx / zoomLevel; 
+                viewOffsetY -= dy / zoomLevel;
+                applyPanBoundaries();
+                lastPanX = e.clientX;
+                lastPanY = e.clientY;
+                redrawDisplayCanvas();
+            }
+        });
+        videoCanvas.addEventListener('mouseup', () => { 
+            if (isPanning) {
+                isPanning = false;
+                if (measurementState.includes('_click')) {
+                    videoCanvas.style.cursor = 'crosshair'; 
+                } else if (videoCanvas.style.pointerEvents === 'auto') { 
+                    videoCanvas.style.cursor = 'grab';
+                } else {
+                    videoCanvas.style.cursor = 'default';
+                }
+            }
+        });
+        videoCanvas.addEventListener('mouseleave', () => { 
+            if (isPanning) {
+                isPanning = false;
+                 if (measurementState.includes('_click')) {
+                    videoCanvas.style.cursor = 'crosshair';
+                } else if (videoCanvas.style.pointerEvents === 'auto') {
+                    videoCanvas.style.cursor = 'grab';
+                } else {
+                    videoCanvas.style.cursor = 'default';
+                }
+            }
+        });
+        
+        // --- Zoom and Pan Logic (shared) ---
+        function applyPanBoundaries() { 
+            const maxViewOffsetX = sourceFrameCanvas.width - (videoCanvas.width / zoomLevel);
+            const maxViewOffsetY = sourceFrameCanvas.height - (videoCanvas.height / zoomLevel);
+            viewOffsetX = Math.max(0, Math.min(viewOffsetX, maxViewOffsetX));
+            viewOffsetY = Math.max(0, Math.min(viewOffsetY, maxViewOffsetY));
+            if (sourceFrameCanvas.width <= videoCanvas.width / zoomLevel) viewOffsetX = 0; 
+            if (sourceFrameCanvas.height <= videoCanvas.height / zoomLevel) viewOffsetY = 0;
+        }
+        function adjustZoom(newZoomLevel) { 
+            if (sourceFrameCanvas.width === 0) return; 
+            const oldZoomLevel = zoomLevel;
+            zoomLevel = Math.max(MIN_ZOOM, Math.min(newZoomLevel, MAX_ZOOM));
+            const centerX_canvas = videoCanvas.width / 2;
+            const centerY_canvas = videoCanvas.height / 2;
+            const centerX_image = viewOffsetX + (centerX_canvas / oldZoomLevel);
+            const centerY_image = viewOffsetY + (centerY_canvas / oldZoomLevel);
+            viewOffsetX = centerX_image - (centerX_canvas / zoomLevel);
+            viewOffsetY = centerY_image - (centerY_canvas / zoomLevel);
+            applyPanBoundaries();
+            redrawDisplayCanvas();
+            if (videoCanvas.style.pointerEvents === 'auto' && !measurementState.includes('_click') && zoomLevel > 1) {
+                 videoCanvas.style.cursor = 'grab';
+            } else if (videoCanvas.style.pointerEvents === 'auto' && measurementState.includes('_click')) {
+                 videoCanvas.style.cursor = 'crosshair';
+            }
+        }
+        zoomInButton.addEventListener('click', () => adjustZoom(zoomLevel + ZOOM_STEP));
+        zoomOutButton.addEventListener('click', () => adjustZoom(zoomLevel - ZOOM_STEP));
+        zoomResetButton.addEventListener('click', () => { 
+            resetZoomAndPan(); 
+            redrawDisplayCanvas(); 
+            if (videoCanvas.style.pointerEvents === 'auto' && !measurementState.includes('_click')) {
+                 videoCanvas.style.cursor = (zoomLevel > 1) ? 'grab' : 'default'; 
+            } else if (videoCanvas.style.pointerEvents === 'auto' && measurementState.includes('_click')) {
+                 videoCanvas.style.cursor = 'crosshair';
+            }
+        });
+        function resetZoomAndPan() { 
+            zoomLevel = 1.0;
+            if (sourceFrameCanvas.width > 0 && sourceFrameCanvas.height > 0) {
+                viewOffsetX = (sourceFrameCanvas.width - videoCanvas.width / zoomLevel) / 2;
+                viewOffsetY = (sourceFrameCanvas.height - videoCanvas.height / zoomLevel) / 2;
+            } else {
+                viewOffsetX = 0; viewOffsetY = 0;
+            }
+            applyPanBoundaries();
+        }
+
+        // --- Main Redraw Function for Display Canvas (Handles both modes) ---
+        function redrawDisplayCanvas() {
+            if (sourceFrameCanvas.width === 0 || sourceFrameCanvas.height === 0) return;
+            visibleCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
+            visibleCtx.imageSmoothingEnabled = false;
+            visibleCtx.drawImage(sourceFrameCanvas, viewOffsetX, viewOffsetY, videoCanvas.width / zoomLevel, videoCanvas.height / zoomLevel, 0, 0, videoCanvas.width, videoCanvas.height);
+
+            if (currentAppMode === 'dimension') {
+                if (pointsForRefLine.length === 2) {
+                    const p1_disp = toDisplayCoords(pointsForRefLine[0]); const p2_disp = toDisplayCoords(pointsForRefLine[1]);
+                    drawLineOnCanvas(p1_disp, p2_disp, 'blue');
+                    drawPointOnCanvas(p1_disp.x, p1_disp.y, 'cyan'); drawPointOnCanvas(p2_disp.x, p2_disp.y, 'cyan');
+                }
+                if (pointsForTargetLine.length === 2) {
+                    const p1_disp = toDisplayCoords(pointsForTargetLine[0]); const p2_disp = toDisplayCoords(pointsForTargetLine[1]);
+                    drawLineOnCanvas(p1_disp, p2_disp, 'red');
+                    drawPointOnCanvas(p1_disp.x, p1_disp.y, 'magenta'); drawPointOnCanvas(p2_disp.x, p2_disp.y, 'magenta');
+                }
+            }
+            else if (currentAppMode === 'oncoming') {
+                if (vehicleSnapshot1.points.length === 2) {
+                    const p1_disp = toDisplayCoords(vehicleSnapshot1.points[0]); const p2_disp = toDisplayCoords(vehicleSnapshot1.points[1]);
+                    drawLineOnCanvas(p1_disp, p2_disp, 'rgba(0, 255, 0, 0.7)'); 
+                    drawPointOnCanvas(p1_disp.x, p1_disp.y, 'lime'); drawPointOnCanvas(p2_disp.x, p2_disp.y, 'lime');
+                }
+                if (vehicleSnapshot2.points.length === 2 || (oncomingMarkingStep === 2 && measurementState === 'oncoming_F2_P2_click' && points.length === 2)) {
+                     const p_set = vehicleSnapshot2.points.length === 2 ? vehicleSnapshot2.points : points;
+                     const p1_disp = toDisplayCoords(p_set[0]); const p2_disp = toDisplayCoords(p_set[1]);
+                     drawLineOnCanvas(p1_disp, p2_disp, 'rgba(255, 0, 255, 0.7)'); 
+                     drawPointOnCanvas(p1_disp.x, p1_disp.y, 'fuchsia'); drawPointOnCanvas(p2_disp.x, p2_disp.y, 'fuchsia');
+                } else if (oncomingMarkingStep === 2 && measurementState === 'oncoming_F2_P1_click' && points.length === 1) { 
+                     const disp_p = toDisplayCoords(points[0]);
+                     drawPointOnCanvas(disp_p.x, disp_p.y, 'fuchsia');
+                }
+            }
+            
+            if (measurementState.includes('_click')) { 
+                 points.forEach(img_p => {
+                    const disp_p = toDisplayCoords(img_p);
+                    if(disp_p) drawPointOnCanvas(disp_p.x, disp_p.y);
+                });
+            }
+        }
+        
+        // --- Reset Functions ---
+        resetCurrentModeButton.addEventListener('click', () => {
+            if (currentAppMode === 'dimension') {
+                resetDimensionMeasurementState();
+            } else if (currentAppMode === 'oncoming') {
+                resetOncomingAnalysisState();
+            }
+        });
+
+        function resetAllApplicationStates() { 
+            resetAllMeasurementStates();
+            currentAppMode = 'none';
+            videoNaturalWidth = 0; videoNaturalHeight = 0;
+            if(sourceFrameCtx) sourceFrameCtx.clearRect(0,0,sourceFrameCanvas.width, sourceFrameCanvas.height);
+            if(visibleCtx) visibleCtx.clearRect(0,0, videoCanvas.width, videoCanvas.height);
+        }
+        
+        function resetAllMeasurementStates() { 
+            points = []; pointsForRefLine = []; pointsForTargetLine = [];
+            measurementState = 'idle';
+            refPixelLength = 0; scale = 0; currentEstimatedSizeMm = 0;
+            vehicleSnapshot1 = { points: [], time: 0, angle: null, frameCaptured: false };
+            vehicleSnapshot2 = { points: [], time: 0, angle: null, frameCaptured: false };
+            oncomingMarkingStep = 0;
+
+            if (videoCanvas) {
+                videoCanvas.style.display = 'none'; 
+                videoCanvas.style.pointerEvents = 'none';
+                videoCanvas.style.cursor = 'default';
+            }
+            if(visibleCtx) visibleCtx.clearRect(0,0, videoCanvas.width, videoCanvas.height); 
+
+            updateDimensionResultsDisplay(); 
+            updateOncomingAnalysisResultsDisplay(); 
+            
+            aiCommentText.textContent = ''; targetObjectNameInput.value = '';
+            getAiCommentButton.disabled = true; aiCommentSection.classList.add('hidden');
+            startVehicleMarkingButton.classList.add('hidden');
+            if(captureFrameButton) captureFrameButton.disabled = false;
+        }
+
+
+        function resetDimensionMeasurementState() {
+            points = []; pointsForRefLine = []; pointsForTargetLine = [];
+            measurementState = 'idle'; 
+            refPixelLength = 0; scale = 0; currentEstimatedSizeMm = 0;
+            updateDimensionResultsDisplay();
+            aiCommentText.textContent = ''; targetObjectNameInput.value = '';
+            getAiCommentButton.disabled = true; aiCommentSection.classList.add('hidden');
+            
+            if (sourceFrameCanvas.width > 0 && currentAppMode === 'dimension') { 
+                videoCanvas.style.display = 'block';
+                videoCanvas.style.pointerEvents = 'auto';
+                videoCanvas.style.cursor = 'crosshair';
+                measurementState = 'dim_waiting_ref1';
+                showUIMessage(commonInstructionText, "参照オブジェクトの実際のサイズを入力し、参照オブジェクトの始点と終点をクリックしてください。");
+                showUIMessage(dimensionStatusText, "参照オブジェクトのサイズ入力待ち");
+                resetZoomAndPan(); 
+                redrawDisplayCanvas();
+            } else {
+                videoCanvas.style.display = 'none';
+                videoCanvas.style.pointerEvents = 'none';
+                videoCanvas.style.cursor = 'default';
+                if(visibleCtx) visibleCtx.clearRect(0,0, videoCanvas.width, videoCanvas.height);
+            }
+        }
+
+        function resetOncomingAnalysisState() {
+            points = [];
+            vehicleSnapshot1 = { points: [], time: 0, angle: null, frameCaptured: false };
+            vehicleSnapshot2 = { points: [], time: 0, angle: null, frameCaptured: false };
+            oncomingMarkingStep = 0;
+            measurementState = 'idle'; 
+            updateOncomingAnalysisResultsDisplay();
+            
+            showUIMessage(oncomingAnalysisInstructionText, "分析したい最初のフレームで動画を一時停止し、「このフレームをキャプチャ (1回目)」を押してください。");
+            captureFrameButton.textContent = "このフレームをキャプチャ (1回目)";
+            captureFrameButton.disabled = false;
+            startVehicleMarkingButton.classList.add('hidden');
+            videoCanvas.style.display = 'none'; 
+            videoCanvas.style.pointerEvents = 'none'; 
+            videoCanvas.style.cursor = 'default';
+            if(visibleCtx) visibleCtx.clearRect(0,0, videoCanvas.width, videoCanvas.height);
+        }
+
+        function updateDimensionResultsDisplay() {
+            refPixelLengthText.textContent = refPixelLength > 0 ? refPixelLength.toFixed(2) : '-';
+            scaleText.textContent = scale > 0 ? scale.toFixed(4) : '-';
+            targetPixelLengthText.textContent = '-'; 
+            estimatedSizeText.textContent = '-'; 
+            if(measurementState === 'idle' || !dimensionResultsDisplay.classList.contains('hidden')) { 
+                 showUIMessage(dimensionStatusText, measurementState.startsWith('dim_') ? dimensionStatusText.textContent : "待機中");
+            }
+        }
+        function updateOncomingAnalysisResultsDisplay() {
+            vehicleAngle1Text.textContent = vehicleSnapshot1.angle !== null ? vehicleSnapshot1.angle.toFixed(1) : '-';
+            vehicleAngle2Text.textContent = vehicleSnapshot2.angle !== null ? vehicleSnapshot2.angle.toFixed(1) : '-';
+            if (vehicleSnapshot1.angle !== null && vehicleSnapshot2.angle !== null) {
+                let angleDiff = vehicleSnapshot2.angle - vehicleSnapshot1.angle;
+                if (angleDiff > 180) angleDiff -= 360; if (angleDiff < -180) angleDiff += 360;
+                angleChangeText.textContent = angleDiff.toFixed(1);
+            } else {
+                angleChangeText.textContent = '-';
+            }
+            timeDiffText.textContent = (vehicleSnapshot1.time && vehicleSnapshot2.time && vehicleSnapshot1.time !== vehicleSnapshot2.time) ? (vehicleSnapshot2.time - vehicleSnapshot1.time).toFixed(2) : '-';
+            if(measurementState === 'idle' || !oncomingAnalysisResultsDisplay.classList.contains('hidden')) {
+                 showUIMessage(oncomingStatusText, measurementState.startsWith('oncoming_') || oncomingMarkingStep > 0 ? oncomingStatusText.textContent : "待機中");
+            }
+        }
+        
+        if (videoCanvas) {
+            videoCanvas.style.display = 'none';
+            videoCanvas.style.pointerEvents = 'none';
+            videoCanvas.style.cursor = 'default';
+        }
+
+        // --- AIコメント生成機能 ---
+        getAiCommentButton.addEventListener('click', async () => { 
+            const objectName = targetObjectNameInput.value.trim() || "この物体";
+            const size = currentEstimatedSizeMm;
+            if (size <= 0) { showMessage("有効な測定結果がありません。"); return; }
+            aiCommentText.textContent = ''; aiButtonLoader.classList.remove('hidden'); getAiCommentButton.disabled = true;
+            let prompt = `これは「${objectName}」で、推定される大きさは約${size.toFixed(1)}mmです。この物体について何か面白い豆知識、一般的な用途、または関連する興味深い情報を簡潔に教えてください。`;
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory }; const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(`AIコメントの生成に失敗しました。ステータス: ${response.status}. ${errorData?.error?.message || ''}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    aiCommentText.textContent = result.candidates[0].content.parts[0].text;
+                } else { throw new Error("AIからの応答が予期した形式ではありません。"); }
+            } catch (error) { showMessage(`AIコメントの取得中にエラーが発生しました: ${error.message}`); aiCommentText.textContent = "コメントの生成に失敗しました。";
+            } finally { aiButtonLoader.classList.add('hidden'); getAiCommentButton.disabled = false; }
+        });
+        
+        setAppMode('none'); 
+
+    </script>
+</body>
+</html>
