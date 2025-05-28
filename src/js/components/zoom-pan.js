@@ -28,6 +28,8 @@ function zoomIn() {
         
         applyPanBoundaries();
         redrawDisplayCanvas();
+        
+        console.log('Zoom In - New zoom level:', zoomLevel, 'measurementState:', measurementState);
     }
 }
 
@@ -81,6 +83,7 @@ function startPan(e) {
     lastPanX = e.clientX - rect.left;
     lastPanY = e.clientY - rect.top;
     videoCanvas.style.cursor = 'grabbing';
+    console.log('Pan started - isPanning:', isPanning, 'zoomLevel:', zoomLevel);
 }
 
 /**

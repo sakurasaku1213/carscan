@@ -27,6 +27,7 @@ function captureFrame() {
         videoCanvas.style.display = 'block';
         videoCanvas.style.pointerEvents = 'auto';
         videoCanvas.style.cursor = 'default';
+        console.log('Frame captured - measurementState:', measurementState, 'zoomLevel:', zoomLevel);
     }, 100);
 
     sharedControlsContainer.classList.remove('hidden'); 
