@@ -112,7 +112,12 @@ function doPan(e) {
  */
 function endPan() {
     isPanning = false;
-    videoCanvas.style.cursor = 'crosshair';
+    // モードに応じて適切なカーソルに戻す
+    if (measurementState !== 'idle' && currentAppMode !== 'none') {
+        videoCanvas.style.cursor = 'crosshair';
+    } else {
+        videoCanvas.style.cursor = 'default';
+    }
 }
 
 /**
@@ -132,7 +137,13 @@ function initZoomPanEvents() {
         }
     });
     
-    videoCanvas.addEventListener('mousemove', doPan);
+    videoCanvas.addEventListener('mousemove', (e) => {
+        doPan(e);
+        // ズーム時はマウスオーバーでgrabカーソルを表示
+        if (!isPanning && zoomLevel > 1.0 && measurementState === 'idle') {
+            videoCanvas.style.cursor = 'grab';
+        }
+    });
     
     document.addEventListener('mouseup', endPan);
     

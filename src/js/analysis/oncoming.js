@@ -19,12 +19,15 @@ function captureFrame() {
     if (!captureCurrentFrame()) {
         showMessage("フレームのキャプチャに失敗しました。");
         return;
-    }
+    }    // キャプチャ中は一時的にキャンバスを非表示
+    videoCanvas.style.display = 'none';
     
-    // キャプチャ中はキャンバスを非表示
-    videoCanvas.style.display = 'none'; 
-    videoCanvas.style.pointerEvents = 'none'; 
-    videoCanvas.style.cursor = 'default';
+    // ズーム・パン用にpointerEventsは有効のまま、表示後に再度表示
+    setTimeout(() => {
+        videoCanvas.style.display = 'block';
+        videoCanvas.style.pointerEvents = 'auto';
+        videoCanvas.style.cursor = 'default';
+    }, 100);
 
     sharedControlsContainer.classList.remove('hidden'); 
     zoomControlsContainer.classList.remove('hidden');
