@@ -79,9 +79,9 @@ function applyPanBoundaries() {
  */
 function startPan(e) {
     isPanning = true;
-    const rect = videoCanvas.getBoundingClientRect();
-    lastPanX = e.clientX - rect.left;
-    lastPanY = e.clientY - rect.top;
+    // 元の実装に合わせてclientXを直接使用
+    lastPanX = e.clientX;
+    lastPanY = e.clientY;
     videoCanvas.style.cursor = 'grabbing';
     console.log('Pan started - isPanning:', isPanning, 'zoomLevel:', zoomLevel);
 }
@@ -93,21 +93,17 @@ function startPan(e) {
 function doPan(e) {
     if (!isPanning) return;
     
-    const rect = videoCanvas.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
-    
-    const deltaX = (lastPanX - currentX) / zoomLevel;
-    const deltaY = (lastPanY - currentY) / zoomLevel;
-    
-    viewOffsetX += deltaX;
-    viewOffsetY += deltaY;
+    // 元の実装に合わせて移動量を計算
+    const dx = e.clientX - lastPanX;
+    const dy = e.clientY - lastPanY;
+    viewOffsetX -= dx / zoomLevel;
+    viewOffsetY -= dy / zoomLevel;
     
     applyPanBoundaries();
     redrawDisplayCanvas();
     
-    lastPanX = currentX;
-    lastPanY = currentY;
+    lastPanX = e.clientX;
+    lastPanY = e.clientY;
 }
 
 /**
@@ -135,10 +131,10 @@ function initZoomPanEvents() {
     zoomOutButton.addEventListener('click', zoomOut);
     zoomResetButton.addEventListener('click', resetZoom);    // マウスイベント
     videoCanvas.addEventListener('mousedown', (e) => {
-        if (e.button === 0 && zoomLevel > 1.0) { // 左クリック & ズーム時のみパン
+        if (e.button === 0 && videoCanvas.style.pointerEvents === 'auto' && zoomLevel > 1.0) {
             // フレームキャプチャ後やマーキング待機中でもパンを許可
             const isInActiveMarkingMode = measurementState.includes('_click');
-            console.log('MouseDown - measurementState:', measurementState, 'isInActiveMarkingMode:', isInActiveMarkingMode, 'zoomLevel:', zoomLevel);
+            console.log('MouseDown - measurementState:', measurementState, 'isInActiveMarkingMode:', isInActiveMarkingMode, 'zoomLevel:', zoomLevel, 'pointerEvents:', videoCanvas.style.pointerEvents);
             if (!isInActiveMarkingMode) {
                 console.log('Starting pan...');
                 startPan(e);
