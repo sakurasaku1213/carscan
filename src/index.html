@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarScan Pro - 高度動画解析ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CarScan Pro</h1>
+            <p class="text-gray-600 mt-2" id="appSubtitle">高度動画解析ツール - 寸法測定・軌跡追跡・速度分析</p>
+        </header>
+
+        <div class="mb-6">
+            <label for="videoFile" class="block text-sm font-medium text-gray-700 mb-1">MP4ファイルを選択:</label>
+            <input type="file" id="videoFile" accept="video/mp4" class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100 transition-colors duration-150"/>
+        </div>
+
+        <div id="videoArea" class="mb-6 video-container">
+            <video id="videoPlayer" controls>
+                <p class="text-center text-gray-500 p-4">動画ファイルを選択すると、ここに表示されます。</p>
+            </video>
+            <canvas id="videoCanvas"></canvas>
+        </div>
+        
+        <div id="loadingIndicator" class="hidden items-center justify-center mb-4">
+            <div class="loader"></div><span class="text-gray-600">動画を処理中...</span>
+        </div>
+
+        <div id="modeSelectionContainer" class="mb-4 flex space-x-2 hidden">
+            <button id="dimensionModeButton" class="mode-button flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition-colors">寸法測定モード</button>
+            <button id="oncomingAnalysisModeButton" class="mode-button flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition-colors">対向車進路分析モード</button>
+        </div>
+        
+        <div id="dimensionControlsArea" class="mb-6 hidden">
+            <button id="startDimensionMeasurementButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors duration-150 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                現在のフレームで寸法測定開始
+            </button>
+        </div>
+
+        <div id="oncomingAnalysisControlsArea" class="mb-6 hidden space-y-3">
+             <p id="oncomingAnalysisInstructionText" class="text-sm text-purple-700 font-semibold bg-purple-50 p-3 rounded-md"></p>
+            <button id="captureFrameButton" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150">
+                このフレームをキャプチャ
+            </button>
+            <button id="startVehicleMarkingButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 hidden">
+                この車両をマーク
+            </button>
+        </div>
+
+        <div id="sharedControlsContainer" class="mb-6 hidden">
+            <div id="zoomControlsContainer" class="mb-3 p-3 bg-gray-100 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 mb-1">表示操作:</label>
+                <div class="flex items-center justify-center space-x-2 zoom-controls">
+                    <button id="zoomOutButton" title="ズームアウト" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-md shadow transition-colors">-</button>
+                    <button id="zoomResetButton" title="ズームリセット" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md shadow transition-colors">リセット</button>
+                    <button id="zoomInButton" title="ズームイン" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-md shadow transition-colors">+</button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 text-center">ズーム後、画像をドラッグして表示範囲を移動できます。</p>
+            </div>
+
+            <div id="dimensionMeasurementInputs" class="space-y-4">
+                <div>
+                    <label for="refObjectActualSize" class="block text-sm font-medium text-gray-700">参照オブジェクトの実際のサイズ (mm):</label>
+                    <input type="number" id="refObjectActualSize" placeholder="例: 100" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <p id="commonInstructionText" class="text-sm text-indigo-600 font-semibold bg-indigo-50 p-3 rounded-md"></p>
+            </div>
+        </div>
+
+        <div id="resultsArea" class="bg-gray-50 p-4 rounded-lg shadow hidden">
+            <div id="dimensionResultsDisplay" class="hidden">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">寸法測定結果:</h2>
+                <div class="space-y-2 text-sm mb-4">
+                    <p><strong>状態:</strong> <span id="dimensionStatusText" class="text-gray-600">待機中</span></p>
+                    <p><strong>参照オブジェクトのピクセル長:</strong> <span id="refPixelLengthText" class="text-gray-600">-</span> px</p>
+                    <p><strong>スケール (mm/pixel):</strong> <span id="scaleText" class="text-gray-600">-</span></p>
+                    <p><strong>対象オブジェクトのピクセル長:</strong> <span id="targetPixelLengthText" class="text-gray-600">-</span> px</p>
+                    <p class="text-lg font-bold text-green-600"><strong>推定実寸:</strong> <span id="estimatedSizeText">-</span> mm</p>
+                </div>
+                <div id="aiCommentSection" class="mt-4 pt-4 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">✨ AIによるコメント</h3>
+                    <div>
+                        <label for="targetObjectNameInput" class="block text-sm font-medium text-gray-700">測定対象物の名前 (任意):</label>
+                        <input type="text" id="targetObjectNameInput" placeholder="例: スマートフォン" class="mt-1 mb-2 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <button id="getAiCommentButton" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 disabled:opacity-50" disabled>
+                        <span id="aiButtonLoader" class="loader button-loader hidden"></span>コメントを生成 ✨
+                    </button>
+                    <p id="aiCommentText" class="mt-2 text-sm text-gray-600 bg-purple-50 p-3 rounded-md min-h-[40px]"></p>
+                </div>
+            </div>
+            <div id="oncomingAnalysisResultsDisplay" class="hidden">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">対向車進路分析結果:</h2>
+                <div class="space-y-2 text-sm">
+                    <p><strong>状態:</strong> <span id="oncomingStatusText" class="text-gray-600">待機中</span></p>
+                    <p><strong>1回目マーク時の車両角度:</strong> <span id="vehicleAngle1Text">-</span> °</p>
+                    <p><strong>2回目マーク時の車両角度:</strong> <span id="vehicleAngle2Text">-</span> °</p>
+                    <p class="text-lg font-bold text-red-600"><strong>角度変化 (2回目 - 1回目):</strong> <span id="angleChangeText">-</span> °</p>
+                    <p><strong>フレーム間時間差:</strong> <span id="timeDiffText">-</span> 秒</p>
+                </div>
+            </div>
+            <button id="resetCurrentModeButton" class="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                現在のモードをリセット
+            </button>
+        </div>
+        
+        <div id="messageBox" class="hidden fixed top-5 right-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md z-50" role="alert">
+            <strong class="font-bold">エラー: </strong><span class="block sm:inline" id="messageText"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <svg id="closeMessageButton" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+            </span>
+        </div>
+    </div>    <!-- Scripts -->
+    <script src="js/globals.js"></script>
+    <script src="js/dom-elements.js"></script>
+    <script src="js/utils/math.js"></script>
+    <script src="js/utils/ui.js"></script>
+    <script src="js/utils/canvas.js"></script>
+    <script src="js/components/zoom-pan.js"></script>
+    <script src="js/components/ai-comment.js"></script>
+    <script src="js/analysis/dimension.js"></script>
+    <script src="js/analysis/oncoming.js"></script>
+    <script src="js/core/video-handler.js"></script>
+    <script src="js/core/mode-manager.js"></script>
+    <script src="js/core/app.js"></script>
+</body>
+</html>
