@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>キャプチャマーキング機能テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .capture-container {
+            position: relative;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            background: white;
+        }
+        #testCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: grab;
+        }
+        #testCanvas.crosshair-mode {
+            cursor: crosshair !important;
+        }
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            background: rgba(255,255,255,0.9);
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .zoom-controls button {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .zoom-controls button:hover {
+            background: #f0f0f0;
+        }
+        .debug-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+        }
+        .control-panel {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f4f8;
+            border-radius: 5px;
+        }
+        .control-panel button {
+            margin: 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .enable-marking {
+            background: #4CAF50;
+            color: white;
+        }
+        .disable-marking {
+            background: #f44336;
+            color: white;
+        }
+        .clear-points {
+            background: #ff9800;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 キャプチャマーキング機能テスト</h1>
+        
+        <div class="control-panel">
+            <h3>コントロール</h3>
+            <button class="enable-marking" onclick="enableMarkingMode()">マーキングモード ON</button>
+            <button class="disable-marking" onclick="disableMarkingMode()">マーキングモード OFF</button>
+            <button class="clear-points" onclick="clearAllPoints()">ポイントクリア</button>
+            <button onclick="createTestImage()">テスト画像作成</button>
+        </div>
+        
+        <div class="capture-container">
+            <canvas id="testCanvas" width="800" height="600"></canvas>
+            <div class="zoom-controls">
+                <button onclick="zoomIn()" title="ズームイン">+</button>
+                <button onclick="resetZoom()" title="リセット">⌂</button>
+                <button onclick="zoomOut()" title="ズームアウト">-</button>
+            </div>
+        </div>
+        
+        <div class="debug-info">
+            <div><strong>デバッグ情報:</strong></div>
+            <div>ズーム: <span id="debugZoom">1.000</span> | オフセット: (<span id="debugOffsetX">0</span>, <span id="debugOffsetY">0</span>)</div>
+            <div>画像サイズ: <span id="debugImageSize">800x600</span> | キャンバスサイズ: <span id="debugCanvasSize">800x600</span></div>
+            <div>最後のクリック: (<span id="debugLastClick">-</span>)</div>
+            <div>マーキングポイント数: <span id="debugPointCount">0</span></div>
+        </div>
+    </div>
+
+    <script>
+        // テスト用のグローバル変数
+        let testCanvas, testCtx;
+        let testZoomLevel = 1;
+        let testViewOffsetX = 0;
+        let testViewOffsetY = 0;
+        let testIsDragging = false;
+        let testLastMouseX = 0;
+        let testLastMouseY = 0;
+        let testMarkingPoints = [];
+        let testIsMarkingMode = false;
+        let testImage = null;
+
+        // 初期化
+        window.onload = function() {
+            testCanvas = document.getElementById('testCanvas');
+            testCtx = testCanvas.getContext('2d');
+            
+            createTestImage();
+            setupEventListeners();
+            updateDebugInfo();
+        };
+
+        function createTestImage() {
+            // グリッド付きのテスト画像を作成
+            testCtx.clearRect(0, 0, testCanvas.width, testCanvas.height);
+            
+            // 背景
+            testCtx.fillStyle = '#f0f8ff';
+            testCtx.fillRect(0, 0, testCanvas.width, testCanvas.height);
+            
+            // グリッド線
+            testCtx.strokeStyle = '#ddd';
+            testCtx.lineWidth = 1;
+            for (let x = 0; x <= testCanvas.width; x += 50) {
+                testCtx.beginPath();
+                testCtx.moveTo(x, 0);
+                testCtx.lineTo(x, testCanvas.height);
+                testCtx.stroke();
+            }
+            for (let y = 0; y <= testCanvas.height; y += 50) {
+                testCtx.beginPath();
+                testCtx.moveTo(0, y);
+                testCtx.lineTo(testCanvas.width, y);
+                testCtx.stroke();
+            }
+            
+            // 座標ラベル
+            testCtx.fillStyle = '#666';
+            testCtx.font = '12px Arial';
+            for (let x = 0; x <= testCanvas.width; x += 100) {
+                for (let y = 0; y <= testCanvas.height; y += 100) {
+                    testCtx.fillText(`(${x},${y})`, x + 5, y + 15);
+                }
+            }
+            
+            // テスト用の図形
+            testCtx.fillStyle = '#4CAF50';
+            testCtx.fillRect(200, 150, 100, 80);
+            
+            testCtx.fillStyle = '#2196F3';
+            testCtx.beginPath();
+            testCtx.arc(500, 300, 60, 0, Math.PI * 2);
+            testCtx.fill();
+            
+            console.log('📸 Test image created');
+        }
+
+        function setupEventListeners() {
+            testCanvas.addEventListener('mousedown', handleMouseDown);
+            testCanvas.addEventListener('mousemove', handleMouseMove);
+            testCanvas.addEventListener('mouseup', handleMouseUp);
+            testCanvas.addEventListener('mouseleave', handleMouseUp);
+            testCanvas.addEventListener('click', handleCanvasClick);
+            testCanvas.addEventListener('wheel', handleWheel);
+        }
+
+        function handleMouseDown(e) {
+            if (testIsMarkingMode) return;
+            
+            testIsDragging = true;
+            testLastMouseX = e.clientX;
+            testLastMouseY = e.clientY;
+            testCanvas.style.cursor = 'grabbing';
+        }
+
+        function handleMouseMove(e) {
+            if (!testIsDragging || testIsMarkingMode) return;
+            
+            const dx = e.clientX - testLastMouseX;
+            const dy = e.clientY - testLastMouseY;
+            
+            testViewOffsetX += dx / testZoomLevel;
+            testViewOffsetY += dy / testZoomLevel;
+            
+            testLastMouseX = e.clientX;
+            testLastMouseY = e.clientY;
+            
+            renderTest();
+        }
+
+        function handleMouseUp() {
+            testIsDragging = false;
+            testCanvas.style.cursor = testIsMarkingMode ? 'crosshair' : 'grab';
+        }
+
+        function handleCanvasClick(e) {
+            if (!testIsMarkingMode || testIsDragging) return;
+            
+            const rect = testCanvas.getBoundingClientRect();
+            const canvasX = e.clientX - rect.left;
+            const canvasY = e.clientY - rect.top;
+            
+            // 座標変換
+            const imageX = (canvasX / testZoomLevel) - testViewOffsetX;
+            const imageY = (canvasY / testZoomLevel) - testViewOffsetY;
+            
+            console.log('📍 Click coordinates:', {
+                canvas: `(${canvasX.toFixed(1)}, ${canvasY.toFixed(1)})`,
+                image: `(${imageX.toFixed(1)}, ${imageY.toFixed(1)})`,
+                zoom: testZoomLevel.toFixed(3),
+                offset: `(${testViewOffsetX.toFixed(1)}, ${testViewOffsetY.toFixed(1)})`
+            });
+            
+            // 画像範囲内チェック
+            if (imageX < 0 || imageY < 0 || imageX >= testCanvas.width || imageY >= testCanvas.height) {
+                console.log('📍 Click outside image bounds');
+                return;
+            }
+            
+            // ポイント追加
+            const point = { x: imageX, y: imageY };
+            testMarkingPoints.push(point);
+            
+            // デバッグ情報更新
+            document.getElementById('debugLastClick').textContent = `${imageX.toFixed(1)}, ${imageY.toFixed(1)}`;
+            document.getElementById('debugPointCount').textContent = testMarkingPoints.length;
+            
+            renderTest();
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            testZoomLevel *= zoomFactor;
+            if (testZoomLevel < 0.1) testZoomLevel = 0.1;
+            if (testZoomLevel > 10) testZoomLevel = 10;
+            renderTest();
+        }
+
+        function renderTest() {
+            testCtx.clearRect(0, 0, testCanvas.width, testCanvas.height);
+            
+            testCtx.save();
+            testCtx.scale(testZoomLevel, testZoomLevel);
+            testCtx.translate(testViewOffsetX, testViewOffsetY);
+            
+            createTestImage();
+            
+            // マーキングポイントを描画
+            testMarkingPoints.forEach((point, index) => {
+                testCtx.fillStyle = index === 0 ? '#FFD700' : '#FF4444';
+                testCtx.strokeStyle = '#000000';
+                testCtx.lineWidth = 2 / testZoomLevel;
+                
+                testCtx.beginPath();
+                const radius = 8 / testZoomLevel;
+                testCtx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+                testCtx.fill();
+                testCtx.stroke();
+                
+                // 番号表示
+                testCtx.fillStyle = '#FFFFFF';
+                testCtx.strokeStyle = '#000000';
+                testCtx.font = `bold ${14 / testZoomLevel}px Arial`;
+                testCtx.textAlign = 'center';
+                testCtx.textBaseline = 'middle';
+                testCtx.lineWidth = 1 / testZoomLevel;
+                
+                const text = (index + 1).toString();
+                testCtx.strokeText(text, point.x, point.y);
+                testCtx.fillText(text, point.x, point.y);
+            });
+            
+            testCtx.restore();
+            updateDebugInfo();
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('debugZoom').textContent = testZoomLevel.toFixed(3);
+            document.getElementById('debugOffsetX').textContent = testViewOffsetX.toFixed(1);
+            document.getElementById('debugOffsetY').textContent = testViewOffsetY.toFixed(1);
+            document.getElementById('debugImageSize').textContent = `${testCanvas.width}x${testCanvas.height}`;
+            document.getElementById('debugCanvasSize').textContent = `${testCanvas.width}x${testCanvas.height}`;
+        }
+
+        // コントロール関数
+        function enableMarkingMode() {
+            testIsMarkingMode = true;
+            testCanvas.classList.add('crosshair-mode');
+            console.log('📍 Marking mode enabled');
+        }
+
+        function disableMarkingMode() {
+            testIsMarkingMode = false;
+            testCanvas.classList.remove('crosshair-mode');
+            testCanvas.style.cursor = 'grab';
+            console.log('📍 Marking mode disabled');
+        }
+
+        function clearAllPoints() {
+            testMarkingPoints = [];
+            document.getElementById('debugPointCount').textContent = '0';
+            document.getElementById('debugLastClick').textContent = '-';
+            renderTest();
+            console.log('📍 All points cleared');
+        }
+
+        function zoomIn() {
+            testZoomLevel *= 1.2;
+            renderTest();
+        }
+
+        function zoomOut() {
+            testZoomLevel *= 0.8;
+            if (testZoomLevel < 0.1) testZoomLevel = 0.1;
+            renderTest();
+        }
+
+        function resetZoom() {
+            testZoomLevel = 1;
+            testViewOffsetX = 0;
+            testViewOffsetY = 0;
+            renderTest();
+        }
+    </script>
+</body>
+</html>

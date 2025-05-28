@@ -44,6 +44,10 @@ function initApp() {
     initOncomingAnalysis();
     initAIComment();
     
+    // キャプチャエリア機能の初期化
+    initializeCaptureZoomPan();
+    initializeCaptureMarking();
+    
     console.log('CarScan Pro アプリケーションが初期化されました');
 }
 

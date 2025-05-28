@@ -68,3 +68,23 @@ function captureCurrentFrame() {
     }
     return false;
 }
+
+/**
+ * 現在のフレームをキャプチャエリアに表示
+ */
+function captureFrameToImageArea() {
+    if (videoPlayer.readyState >= 2) {
+        // ソースキャンバスにキャプチャ
+        sourceFrameCtx.drawImage(videoPlayer, 0, 0, videoNaturalWidth, videoNaturalHeight);
+        
+        // キャプチャ画像用のImageDataを取得
+        const imageData = sourceFrameCtx.getImageData(0, 0, videoNaturalWidth, videoNaturalHeight);
+        
+        // キャプチャエリアに表示
+        setCaptureImage(imageData, videoNaturalWidth, videoNaturalHeight);
+        
+        console.log(`📸 Frame captured to image area: ${videoNaturalWidth}x${videoNaturalHeight}`);
+        return true;
+    }
+    return false;
+}

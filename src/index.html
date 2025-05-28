@@ -21,13 +21,31 @@
                 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
                 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
                 hover:file:bg-blue-100 transition-colors duration-150"/>
-        </div>
-
-        <div id="videoArea" class="mb-6 video-container">
+        </div>        <div id="videoArea" class="mb-6 video-container">
             <video id="videoPlayer" controls>
                 <p class="text-center text-gray-500 p-4">動画ファイルを選択すると、ここに表示されます。</p>
             </video>
             <canvas id="videoCanvas"></canvas>
+        </div>        <!-- キャプチャ画像表示エリア -->
+        <div id="captureImageArea" class="mb-6 hidden">
+            <div class="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">📸 キャプチャ画像</h3>
+                <div class="capture-container relative bg-white border border-gray-200 rounded-lg overflow-hidden" style="max-width: 800px; margin: 0 auto;">
+                    <canvas id="captureCanvas" class="block w-full h-auto cursor-crosshair"></canvas>
+                    <div id="captureZoomControls" class="absolute top-2 right-2 flex space-x-1 bg-white bg-opacity-90 rounded-lg p-1">
+                        <button id="captureZoomInButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームイン">+</button>
+                        <button id="captureZoomResetButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="リセット">⌂</button>
+                        <button id="captureZoomOutButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームアウト">-</button>
+                    </div>
+                </div>                <!-- デバッグ情報表示エリア -->
+                <div id="captureDebugInfo" class="mt-2 p-2 bg-gray-100 text-xs text-gray-600 font-mono rounded">
+                    <div>ズーム: <span id="debugZoom">1.000</span> | オフセット: (<span id="debugOffsetX">0</span>, <span id="debugOffsetY">0</span>)</div>
+                    <div>画像サイズ: <span id="debugImageSize">-</span> | キャンバスサイズ: <span id="debugCanvasSize">-</span></div>
+                    <div>最後のクリック: (<span id="debugLastClick">-</span>) | マウス: (<span id="debugMousePos">-</span>)</div>
+                    <div>変換テスト: Canvas→Image (<span id="debugTransformTest">-</span>)</div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">ドラッグして移動、ボタンでズーム調整</p>
+            </div>
         </div>
         
         <div id="loadingIndicator" class="hidden items-center justify-center mb-4">
@@ -125,6 +143,8 @@
     <script src="js/utils/ui.js"></script>
     <script src="js/utils/canvas.js"></script>
     <script src="js/components/zoom-pan.js"></script>
+    <script src="js/components/capture-zoom-pan.js"></script>
+    <script src="js/components/capture-marking.js"></script>
     <script src="js/components/ai-comment.js"></script>
     <script src="js/analysis/dimension.js"></script>
     <script src="js/analysis/oncoming.js"></script>

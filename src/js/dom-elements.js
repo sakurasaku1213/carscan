@@ -9,6 +9,13 @@ const messageText = document.getElementById('messageText');
 const closeMessageButton = document.getElementById('closeMessageButton');
 const appSubtitle = document.getElementById('appSubtitle');
 
+// Capture Image Area - キャプチャ画像専用エリア
+const captureImageArea = document.getElementById('captureImageArea');
+const captureCanvas = document.getElementById('captureCanvas');
+const captureZoomInButton = document.getElementById('captureZoomInButton');
+const captureZoomOutButton = document.getElementById('captureZoomOutButton');
+const captureZoomResetButton = document.getElementById('captureZoomResetButton');
+
 // Mode Selection
 const modeSelectionContainer = document.getElementById('modeSelectionContainer');
 const dimensionModeButton = document.getElementById('dimensionModeButton');
@@ -65,3 +72,6 @@ const timeDiffText = document.getElementById('timeDiffText');
 const visibleCtx = videoCanvas.getContext('2d');
 const sourceFrameCanvas = document.createElement('canvas'); // Offscreen
 const sourceFrameCtx = sourceFrameCanvas.getContext('2d');
+
+// Capture Canvas context
+const captureCtx = captureCanvas.getContext('2d');

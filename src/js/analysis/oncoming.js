@@ -14,21 +14,21 @@ function captureFrame() {
     }
     
     videoPlayer.pause();
+      // 現在のフレームをキャプチャエリアに表示
+    if (!captureFrameToImageArea()) {
+        showMessage("フレームのキャプチャに失敗しました。");
+        return;
+    }
     
-    // 現在のフレームをキャプチャ
+    // 従来のキャプチャも実行（互換性のため - ただし表示はしない）
     if (!captureCurrentFrame()) {
         showMessage("フレームのキャプチャに失敗しました。");
         return;
-    }    // キャプチャ中は一時的にキャンバスを非表示
+    }
+
+    // 動画キャンバスを非表示にして、専用エリアでの操作に切り替え
     videoCanvas.style.display = 'none';
-    
-    // ズーム・パン用にpointerEventsは有効のまま、表示後に再度表示
-    setTimeout(() => {
-        videoCanvas.style.display = 'block';
-        videoCanvas.style.pointerEvents = 'auto';
-        videoCanvas.style.cursor = 'default';
-        console.log('Frame captured - measurementState:', measurementState, 'zoomLevel:', zoomLevel);
-    }, 100);
+    videoCanvas.style.pointerEvents = 'none';
 
     sharedControlsContainer.classList.remove('hidden'); 
     zoomControlsContainer.classList.remove('hidden');
@@ -72,9 +72,10 @@ function captureFrame() {
  * 車両マーキング開始
  */
 function startVehicleMarking() {
-    videoCanvas.style.display = 'block'; 
-    videoCanvas.style.pointerEvents = 'auto';
-    videoCanvas.style.cursor = 'crosshair';
+    // 動画キャンバスを非表示にして、専用エリアでの操作に切り替え
+    videoCanvas.style.display = 'none'; 
+    videoCanvas.style.pointerEvents = 'none';
+    
     startVehicleMarkingButton.classList.add('hidden'); 
     captureFrameButton.disabled = true; 
 
@@ -83,17 +84,82 @@ function startVehicleMarking() {
         oncomingMarkingStep = 1;
         measurementState = 'oncoming_F1_P1_click';
         points = []; 
-        showUIMessage(oncomingAnalysisInstructionText, "対向車両の代表的な2点 (例: 前面の両端) をクリックしてください (1回目)。");
+        showUIMessage(oncomingAnalysisInstructionText, "キャプチャ画像エリアで対向車両の代表的な2点 (例: 前面の両端) をクリックしてください (1回目)。");
+        
+        // キャプチャエリアでのマーキングを有効化
+        setCaptureMarkingMode(true, 'oncoming_F1');
         
     } else if (oncomingMarkingStep === 1.7) { 
         // 2回目のマーキング開始
         oncomingMarkingStep = 2;
         measurementState = 'oncoming_F2_P1_click';
         points = []; 
-        showUIMessage(oncomingAnalysisInstructionText, "同じ対向車両の対応する2点を再度クリックしてください (2回目)。");
+        showUIMessage(oncomingAnalysisInstructionText, "キャプチャ画像エリアで同じ対向車両の対応する2点を再度クリックしてください (2回目)。");
+        
+        // キャプチャエリアでのマーキングを有効化
+        setCaptureMarkingMode(true, 'oncoming_F2');
+    }
+}
+
+/**
+ * キャプチャエリアでのクリック処理
+ */
+function handleOncomingCaptureClick(point, pointCount) {
+    console.log(`🎯 Oncoming capture click: point ${pointCount}`, point);
+      if (measurementState === 'oncoming_F1_P1_click') {
+        if (pointCount === 1) {
+            showUIMessage(oncomingAnalysisInstructionText, "キャプチャ画像エリアで対向車両の代表的な2点目 (例: 前面の右端) をクリックしてください (1回目)。");
+        } else if (pointCount === 2) {
+            // 1回目のマーキング完了
+            const capturePoints = getCaptureMarkingPoints();
+            vehicleSnapshot1.points = [...capturePoints];
+            vehicleSnapshot1.time = videoPlayer.currentTime;
+            vehicleSnapshot1.angle = calculateAngle(capturePoints[0], capturePoints[1]);
+            
+            showUIMessage(oncomingStatusText, "1回目のマーク完了。");
+            vehicleAngle1Text.textContent = vehicleSnapshot1.angle !== null ? vehicleSnapshot1.angle.toFixed(1) : '-';
+            
+            oncomingMarkingStep = 1.5;
+            measurementState = 'idle';
+            setCaptureMarkingMode(false);
+            
+            showUIMessage(oncomingAnalysisInstructionText, "動画を数フレーム進め、同じ車両が見える次の重要フレームで一時停止し、「このフレームをキャプチャ (2回目)」を押してください。");
+            captureFrameButton.textContent = "このフレームをキャプチャ (2回目)";
+            captureFrameButton.disabled = false;
+        }
+        
+    } else if (measurementState === 'oncoming_F2_P1_click') {
+        if (pointCount === 1) {
+            showUIMessage(oncomingAnalysisInstructionText, "キャプチャ画像エリアで対向車両の対応する2点目をクリックしてください (2回目)。");
+        } else if (pointCount === 2) {
+            // 2回目のマーキング完了 - 分析実行
+            const capturePoints = getCaptureMarkingPoints();
+            vehicleSnapshot2.points = [...capturePoints];
+            vehicleSnapshot2.time = videoPlayer.currentTime;
+            vehicleSnapshot2.angle = calculateAngle(capturePoints[0], capturePoints[1]);
+            
+            // 分析結果の計算
+            const angleChange = vehicleSnapshot2.angle - vehicleSnapshot1.angle;
+            const timeDiff = vehicleSnapshot2.time - vehicleSnapshot1.time;
+            
+            // 結果表示
+            showUIMessage(oncomingStatusText, "2回目のマーク完了。分析結果を表示しています。");
+            vehicleAngle2Text.textContent = vehicleSnapshot2.angle.toFixed(1);
+            angleChangeText.textContent = angleChange.toFixed(1);
+            timeDiffText.textContent = timeDiff.toFixed(2);
+            
+            oncomingMarkingStep = 3;
+            measurementState = 'completed';
+            setCaptureMarkingMode(false);
+            
+            captureFrameButton.textContent = "新しい分析を開始";
+            captureFrameButton.disabled = false;
+            
+            showUIMessage(oncomingAnalysisInstructionText, "分析完了！角度変化から対向車の進路傾向を確認できます。新しい分析を開始するか、「現在のモードをリセット」でリセットしてください。");
+        }
     }
     
-    redrawDisplayCanvas(); 
+    updateOncomingAnalysisResultsDisplay();
 }
 
 /**
@@ -172,6 +238,11 @@ function resetOncomingAnalysisState() {
     measurementState = 'idle';
     points = [];
     
+    // キャプチャエリアをクリア
+    setCaptureMarkingMode(false);
+    clearCaptureMarkingPoints();
+    hideCaptureImage();
+    
     // UI状態をリセット
     showUIMessage(oncomingAnalysisInstructionText, "分析したい最初のフレームで動画を一時停止し、「このフレームをキャプチャ (1回目)」を押してください。");
     captureFrameButton.textContent = "このフレームをキャプチャ (1回目)";
@@ -196,6 +267,11 @@ function resetOncomingAnalysisStateComplete() {
     oncomingMarkingStep = 0;
     measurementState = 'idle'; 
     
+    // キャプチャエリアをクリア
+    setCaptureMarkingMode(false);
+    clearCaptureMarkingPoints();
+    hideCaptureImage();
+    
     updateOncomingAnalysisResultsDisplay();
     
     showUIMessage(oncomingAnalysisInstructionText, "分析したい最初のフレームで動画を一時停止し、「このフレームをキャプチャ (1回目)」を押してください。");
@@ -203,7 +279,7 @@ function resetOncomingAnalysisStateComplete() {
     captureFrameButton.disabled = false;
     startVehicleMarkingButton.classList.add('hidden');
     
-    videoCanvas.style.display = 'none'; 
+    videoCanvas.style.display = 'none';
     videoCanvas.style.pointerEvents = 'none'; 
     videoCanvas.style.cursor = 'default';
     
