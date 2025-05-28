@@ -113,8 +113,11 @@ function doPan(e) {
 function endPan() {
     isPanning = false;
     // モードに応じて適切なカーソルに戻す
-    if (measurementState !== 'idle' && currentAppMode !== 'none') {
+    const isInActiveMarkingMode = measurementState.includes('_click');
+    if (isInActiveMarkingMode) {
         videoCanvas.style.cursor = 'crosshair';
+    } else if (zoomLevel > 1.0) {
+        videoCanvas.style.cursor = 'grab';
     } else {
         videoCanvas.style.cursor = 'default';
     }
@@ -127,20 +130,24 @@ function initZoomPanEvents() {
     // ズームボタンのイベント
     zoomInButton.addEventListener('click', zoomIn);
     zoomOutButton.addEventListener('click', zoomOut);
-    zoomResetButton.addEventListener('click', resetZoom);
-    
-    // マウスイベント
+    zoomResetButton.addEventListener('click', resetZoom);    // マウスイベント
     videoCanvas.addEventListener('mousedown', (e) => {
         if (e.button === 0 && zoomLevel > 1.0) { // 左クリック & ズーム時のみパン
-            startPan(e);
-            e.preventDefault();
+            // フレームキャプチャ後やマーキング待機中でもパンを許可
+            const isInActiveMarkingMode = measurementState.includes('_click');
+            console.log('MouseDown - measurementState:', measurementState, 'isInActiveMarkingMode:', isInActiveMarkingMode, 'zoomLevel:', zoomLevel);
+            if (!isInActiveMarkingMode) {
+                console.log('Starting pan...');
+                startPan(e);
+                e.preventDefault();
+            }
         }
     });
-    
-    videoCanvas.addEventListener('mousemove', (e) => {
+      videoCanvas.addEventListener('mousemove', (e) => {
         doPan(e);
-        // ズーム時はマウスオーバーでgrabカーソルを表示
-        if (!isPanning && zoomLevel > 1.0 && measurementState === 'idle') {
+        // ズーム時かつアクティブなマーキング中でない場合はgrabカーソルを表示
+        const isInActiveMarkingMode = measurementState.includes('_click');
+        if (!isPanning && zoomLevel > 1.0 && !isInActiveMarkingMode) {
             videoCanvas.style.cursor = 'grab';
         }
     });
