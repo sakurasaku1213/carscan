@@ -1,0 +1,98 @@
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.tmp
+*.temp
+System Volume Information/
+Autorun.inf
+
+# Office files
+~$*.pptx
+~$*.docx
+~$*.xlsx
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+.mdcache/
+.mdcache_gui/
+
+# Executables
+*.exe
+*.msi
+*.deb
+*.rpm
+
+# Configuration files (sensitive)
+*.ini
+*.config
+
+# Japanese text files (keeping only essential ones)
+新しいテキスト ドキュメント.txt
+
+# Legal/Study materials (keeping them separate)
+スキャンデータ/
+過去問解説/
+学会/
+基本書/
+合格答案再現集/
+司法修習/
+実務で使う/
+短答/
+賭博/
+読書/
+福岡賭博/
+法学入門系/
+要件事実/
+高校１年生に*.docx
+選択.pptx
