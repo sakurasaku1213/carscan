@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarScan Pro - 動画寸法測定システム（単一ファイル版）</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <div class="main-container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>🚗 CarScan Pro</h1>
+            <p>動画から正確な寸法を測定する次世代システム</p>
+        </div>
+        
+        <!-- ステップインジケーター -->
+        <div class="step-indicator">
+            <div class="step-item active" id="stepVideo">
+                <div class="step-icon">1</div>
+                <span>動画アップロード</span>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" id="stepCapture">
+                <div class="step-icon">2</div>
+                <span>フレームキャプチャ</span>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" id="stepMeasure">
+                <div class="step-icon">3</div>
+                <span>寸法測定</span>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div class="content-grid">
+            <div class="main-content">
+                <!-- 動画セクション -->
+                <section class="video-section">
+                    <div class="section-header">
+                        <div class="section-icon">🎬</div>
+                        <h2>動画アップロード</h2>
+                    </div>
+                    
+                    <div class="instruction-panel">
+                        <p><strong>📝 手順:</strong> 測定したい物体が写っている動画ファイルを選択してください</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="videoFileInput" class="form-label">動画ファイル選択</label>
+                        <input type="file" id="videoFileInput" accept="video/*" class="file-input">
+                    </div>
+                    
+                    <!-- 動画プレイヤー -->
+                    <div class="video-player-container" id="videoPlayerContainer" style="display: none;">
+                        <video id="videoElement" controls style="width: 100%; max-width: 100%; height: auto;">
+                            お使いのブラウザは動画の再生に対応していません。
+                        </video>
+                    </div>
+                    
+                    <div class="canvas-container" id="videoCanvasContainer">
+                        <canvas id="videoCanvas" style="max-width: 100%; height: auto; display: none;"></canvas>
+                        <div class="canvas-placeholder" id="videoPlaceholder">
+                            動画を読み込むとここに表示されます
+                        </div>
+                    </div>
+                    
+                    <div class="video-controls" id="videoControls">
+                        <div class="control-group">
+                            <button id="playPauseButton" class="btn btn-primary" disabled>
+                                ▶ 再生
+                            </button>
+                            <button id="captureButton" class="btn btn-success" disabled>
+                                📸 キャプチャ
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="progressSlider" class="form-label">再生位置</label>
+                            <input type="range" id="progressSlider" min="0" max="1" step="0.001" value="0" class="slider" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">動画ステータス</div>
+                        <div class="status-value" id="videoStatusText">待機中</div>
+                    </div>
+                </section>
+                
+                <!-- キャプチャセクション -->
+                <section class="capture-section">
+                    <div class="section-header">
+                        <div class="section-icon">📸</div>
+                        <h2>フレームキャプチャ</h2>
+                    </div>
+                    
+                    <div class="canvas-container" id="captureCanvasContainer">
+                        <canvas id="captureCanvas" style="max-width: 100%; height: auto;"></canvas>
+                        <div class="canvas-placeholder" id="capturePlaceholder">
+                            フレームをキャプチャするとここに表示されます
+                        </div>
+                    </div>
+                    
+                    <div class="capture-controls">
+                        <div class="control-info">
+                            <p><strong>操作方法:</strong></p>
+                            <ul>
+                                <li>マウスホイール: ズーム</li>
+                                <li>ドラッグ: パン</li>
+                                <li>クリック: 測定ポイント設定</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="zoom-controls">
+                            <button id="zoomInButton" class="btn btn-secondary">🔍+</button>
+                            <span id="zoomLevel">100%</span>
+                            <button id="zoomOutButton" class="btn btn-secondary">🔍-</button>
+                            <button id="resetZoomButton" class="btn btn-secondary">リセット</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- サイドバー -->
+            <div class="sidebar">
+                <!-- 測定セクション -->
+                <section class="measurement-section">
+                    <div class="section-header">
+                        <div class="section-icon">📏</div>
+                        <h2>寸法測定</h2>
+                    </div>
+                    
+                    <div class="instruction-panel">
+                        <p id="measurementInstruction">キャプチャ画像で測定を開始してください</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="referenceSize" class="form-label">基準オブジェクトのサイズ (mm)</label>
+                        <input type="number" id="referenceSize" class="form-input" placeholder="例: 100" step="0.1">
+                    </div>
+                    
+                    <div class="control-group">
+                        <button id="startMeasurementButton" class="btn btn-primary" disabled>
+                            📏 測定開始
+                        </button>
+                        <button id="clearMeasurementButton" class="btn btn-secondary" disabled>
+                            🗑️ クリア
+                        </button>
+                    </div>
+                    
+                    <div class="measurement-results" id="measurementResults" style="display: none;">
+                        <h3>測定結果</h3>
+                        <div class="result-row">
+                            <span>基準距離 (px):</span>
+                            <span id="referencePixelDistance">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span>測定距離 (px):</span>
+                            <span id="targetPixelDistance">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span>スケール (mm/px):</span>
+                            <span id="scale">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span><strong>推定サイズ (mm):</strong></span>
+                            <span id="estimatedSize"><strong>-</strong></span>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 状態表示 -->
+                <section class="status-section">
+                    <div class="section-header">
+                        <div class="section-icon">ℹ️</div>
+                        <h2>状態</h2>
+                    </div>
+                    
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-label">キャプチャ</div>
+                            <div class="status-value" id="captureStatus">待機中</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">測定モード</div>
+                            <div class="status-value" id="measurementMode">なし</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">ズームレベル</div>
+                            <div class="status-value" id="zoomStatus">100%</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== 単一ファイル版 CarScan Pro =====
+        // 注意: このファイルはCORS制約回避のため、すべてのモジュールを統合しています
+        
+        // グローバル状態管理
+        const AppState = {
+            data: {
+                video: {
+                    element: null,
+                    loaded: false,
+                    playing: false,
+                    width: 0,
+                    height: 0
+                },
+                capture: {
+                    canvas: null,
+                    hasImage: false,
+                    zoomLevel: 1,
+                    viewOffsetX: 0,
+                    viewOffsetY: 0,
+                    isDragging: false
+                },
+                measurement: {
+                    mode: 'none', // 'reference', 'target', 'completed'
+                    referencePoints: [],
+                    targetPoints: [],
+                    referenceSize: 0,
+                    scale: 0,
+                    estimatedSize: 0
+                }
+            },
+            
+            get(key) {
+                const keys = key.split('.');
+                let current = this.data;
+                for (const k of keys) {
+                    current = current[k];
+                    if (current === undefined) return undefined;
+                }
+                return current;
+            },
+            
+            set(key, value) {
+                const keys = key.split('.');
+                const lastKey = keys.pop();
+                let current = this.data;
+                for (const k of keys) {
+                    if (!current[k]) current[k] = {};
+                    current = current[k];
+                }
+                current[lastKey] = value;
+                this.notify(key, value);
+            },
+            
+            notify(key, value) {
+                // 状態変更通知（必要に応じて拡張）
+                console.log(`State changed: ${key} = ${value}`);
+            }
+        };
+        
+        // ユーティリティ関数
+        const Utils = {
+            // DOM要素取得
+            getElement(selector) {
+                return document.querySelector(selector);
+            },
+            
+            // 距離計算
+            calculateDistance(point1, point2) {
+                const dx = point2.x - point1.x;
+                const dy = point2.y - point1.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            },
+            
+            // 座標変換
+            canvasToImageCoords(canvasX, canvasY, zoomLevel, offsetX, offsetY) {
+                return {
+                    x: (canvasX - offsetX) / zoomLevel,
+                    y: (canvasY - offsetY) / zoomLevel
+                };
+            },
+            
+            imageToCanvasCoords(imageX, imageY, zoomLevel, offsetX, offsetY) {
+                return {
+                    x: imageX * zoomLevel + offsetX,
+                    y: imageY * zoomLevel + offsetY
+                };
+            },
+            
+            // メッセージ表示
+            showMessage(message, type = 'info') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `status-message status-${type} fade-in`;
+                messageDiv.textContent = message;
+                
+                let container = Utils.getElement('#message-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'message-container';
+                    container.className = 'fixed top-4 right-4 z-50 space-y-2';
+                    document.body.appendChild(container);
+                }
+                
+                container.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 5000);
+            }
+        };
+        
+        // 動画管理
+        const VideoManager = {
+            videoElement: null,
+            
+            init() {
+                this.videoElement = Utils.getElement('#videoElement');
+                if (!this.videoElement) {
+                    throw new Error('Video element not found');
+                }
+                
+                AppState.set('video.element', this.videoElement);
+                this.setupEventListeners();
+                console.log('✅ VideoManager initialized');
+                return true;
+            },
+            
+            setupEventListeners() {
+                this.videoElement.addEventListener('loadedmetadata', () => {
+                    AppState.set('video.width', this.videoElement.videoWidth);
+                    AppState.set('video.height', this.videoElement.videoHeight);
+                    this.updateUI();
+                });
+                
+                this.videoElement.addEventListener('play', () => {
+                    AppState.set('video.playing', true);
+                    this.updateUI();
+                });
+                
+                this.videoElement.addEventListener('pause', () => {
+                    AppState.set('video.playing', false);
+                    this.updateUI();
+                });
+            },
+            
+            async loadVideo(file) {
+                if (!this.isValidVideoFile(file)) {
+                    Utils.showMessage('サポートされていない動画形式です', 'error');
+                    return false;
+                }
+                
+                try {
+                    const objectURL = URL.createObjectURL(file);
+                    this.videoElement.src = objectURL;
+                    
+                    await new Promise((resolve, reject) => {
+                        const onLoad = () => {
+                            cleanup();
+                            resolve();
+                        };
+                        const onError = () => {
+                            cleanup();
+                            reject(new Error('動画読み込みに失敗しました'));
+                        };
+                        const cleanup = () => {
+                            this.videoElement.removeEventListener('loadedmetadata', onLoad);
+                            this.videoElement.removeEventListener('error', onError);
+                        };
+                        
+                        this.videoElement.addEventListener('loadedmetadata', onLoad, { once: true });
+                        this.videoElement.addEventListener('error', onError, { once: true });
+                        
+                        setTimeout(() => {
+                            cleanup();
+                            reject(new Error('動画読み込みがタイムアウトしました'));
+                        }, 30000);
+                    });
+                    
+                    // UIを更新
+                    Utils.getElement('#videoPlayerContainer').style.display = 'block';
+                    Utils.getElement('#videoPlaceholder').style.display = 'none';
+                    Utils.getElement('#playPauseButton').disabled = false;
+                    Utils.getElement('#captureButton').disabled = false;
+                    Utils.getElement('#progressSlider').disabled = false;
+                    
+                    AppState.set('video.loaded', true);
+                    Utils.showMessage(`動画が読み込まれました: ${file.name}`, 'success');
+                    
+                    return true;
+                } catch (error) {
+                    Utils.showMessage(error.message, 'error');
+                    return false;
+                }
+            },
+            
+            isValidVideoFile(file) {
+                const validTypes = [
+                    'video/mp4', 'video/webm', 'video/ogg', 
+                    'video/quicktime', 'video/x-msvideo'
+                ];
+                return validTypes.includes(file.type);
+            },
+            
+            togglePlayback() {
+                if (AppState.get('video.playing')) {
+                    this.videoElement.pause();
+                } else {
+                    this.videoElement.play();
+                }
+            },
+            
+            updateUI() {
+                const statusText = Utils.getElement('#videoStatusText');
+                if (statusText) {
+                    if (AppState.get('video.loaded')) {
+                        statusText.textContent = AppState.get('video.playing') ? '再生中' : '一時停止';
+                    } else {
+                        statusText.textContent = '待機中';
+                    }
+                }
+                
+                const playButton = Utils.getElement('#playPauseButton');
+                if (playButton) {
+                    playButton.textContent = AppState.get('video.playing') ? '⏸ 一時停止' : '▶ 再生';
+                }
+            }
+        };
+        
+        // キャプチャ管理
+        const CaptureManager = {
+            canvas: null,
+            ctx: null,
+            capturedImageData: null,
+            
+            init() {
+                this.canvas = Utils.getElement('#captureCanvas');
+                if (!this.canvas) {
+                    throw new Error('Capture canvas not found');
+                }
+                
+                this.ctx = this.canvas.getContext('2d');
+                AppState.set('capture.canvas', this.canvas);
+                this.setupEventListeners();
+                console.log('✅ CaptureManager initialized');
+                return true;
+            },
+            
+            setupEventListeners() {
+                // ズーム＆パン
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    this.handleZoom(e);
+                });
+                
+                this.canvas.addEventListener('mousedown', (e) => {
+                    this.handlePanStart(e);
+                });
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    this.handlePanMove(e);
+                });
+                
+                this.canvas.addEventListener('mouseup', () => {
+                    this.handlePanEnd();
+                });
+                
+                // 測定用クリック
+                this.canvas.addEventListener('click', (e) => {
+                    MeasurementManager.handleCanvasClick(e);
+                });
+            },
+            
+            captureFrame() {
+                const videoElement = AppState.get('video.element');
+                if (!videoElement || !AppState.get('video.loaded')) {
+                    Utils.showMessage('動画が読み込まれていません', 'error');
+                    return false;
+                }
+                
+                const videoWidth = videoElement.videoWidth;
+                const videoHeight = videoElement.videoHeight;
+                
+                this.canvas.width = videoWidth;
+                this.canvas.height = videoHeight;
+                
+                this.ctx.drawImage(videoElement, 0, 0, videoWidth, videoHeight);
+                this.capturedImageData = this.ctx.getImageData(0, 0, videoWidth, videoHeight);
+                
+                AppState.set('capture.hasImage', true);
+                AppState.set('capture.zoomLevel', 1);
+                AppState.set('capture.viewOffsetX', 0);
+                AppState.set('capture.viewOffsetY', 0);
+                
+                Utils.getElement('#capturePlaceholder').style.display = 'none';
+                this.canvas.style.display = 'block';
+                
+                Utils.getElement('#startMeasurementButton').disabled = false;
+                
+                Utils.showMessage('フレームをキャプチャしました', 'success');
+                this.updateStatusUI();
+                
+                return true;
+            },
+            
+            handleZoom(e) {
+                if (!AppState.get('capture.hasImage')) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                const newZoom = Math.max(0.1, Math.min(5.0, AppState.get('capture.zoomLevel') * zoomFactor));
+                
+                const zoomRatio = newZoom / AppState.get('capture.zoomLevel');
+                
+                AppState.set('capture.viewOffsetX', mouseX - (mouseX - AppState.get('capture.viewOffsetX')) * zoomRatio);
+                AppState.set('capture.viewOffsetY', mouseY - (mouseY - AppState.get('capture.viewOffsetY')) * zoomRatio);
+                AppState.set('capture.zoomLevel', newZoom);
+                
+                this.redraw();
+                this.updateZoomUI();
+            },
+            
+            handlePanStart(e) {
+                if (!AppState.get('capture.hasImage')) return;
+                
+                AppState.set('capture.isDragging', true);
+                AppState.set('capture.lastMouseX', e.clientX);
+                AppState.set('capture.lastMouseY', e.clientY);
+                this.canvas.style.cursor = 'grabbing';
+            },
+            
+            handlePanMove(e) {
+                if (!AppState.get('capture.isDragging')) return;
+                
+                const deltaX = e.clientX - AppState.get('capture.lastMouseX');
+                const deltaY = e.clientY - AppState.get('capture.lastMouseY');
+                
+                AppState.set('capture.viewOffsetX', AppState.get('capture.viewOffsetX') + deltaX);
+                AppState.set('capture.viewOffsetY', AppState.get('capture.viewOffsetY') + deltaY);
+                AppState.set('capture.lastMouseX', e.clientX);
+                AppState.set('capture.lastMouseY', e.clientY);
+                
+                this.redraw();
+            },
+            
+            handlePanEnd() {
+                AppState.set('capture.isDragging', false);
+                this.canvas.style.cursor = 'default';
+            },
+            
+            redraw() {
+                if (!this.capturedImageData) return;
+                
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 画像を描画
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = this.capturedImageData.width;
+                tempCanvas.height = this.capturedImageData.height;
+                tempCtx.putImageData(this.capturedImageData, 0, 0);
+                
+                const zoom = AppState.get('capture.zoomLevel');
+                const offsetX = AppState.get('capture.viewOffsetX');
+                const offsetY = AppState.get('capture.viewOffsetY');
+                
+                this.ctx.drawImage(
+                    tempCanvas,
+                    offsetX, offsetY,
+                    this.capturedImageData.width * zoom,
+                    this.capturedImageData.height * zoom
+                );
+                
+                // 測定要素を描画
+                MeasurementManager.drawMeasurementElements();
+            },
+            
+            updateZoomUI() {
+                const zoomLevel = Math.round(AppState.get('capture.zoomLevel') * 100);
+                Utils.getElement('#zoomLevel').textContent = `${zoomLevel}%`;
+                Utils.getElement('#zoomStatus').textContent = `${zoomLevel}%`;
+            },
+            
+            updateStatusUI() {
+                const statusEl = Utils.getElement('#captureStatus');
+                if (statusEl) {
+                    statusEl.textContent = AppState.get('capture.hasImage') ? 'キャプチャ済み' : '待機中';
+                }
+            }
+        };
+        
+        // 測定管理
+        const MeasurementManager = {
+            init() {
+                this.setupEventListeners();
+                console.log('✅ MeasurementManager initialized');
+                return true;
+            },
+            
+            setupEventListeners() {
+                Utils.getElement('#startMeasurementButton').addEventListener('click', () => {
+                    this.startMeasurement();
+                });
+                
+                Utils.getElement('#clearMeasurementButton').addEventListener('click', () => {
+                    this.clearMeasurement();
+                });
+            },
+            
+            startMeasurement() {
+                const mode = AppState.get('measurement.mode');
+                
+                if (mode === 'none') {
+                    // 基準測定開始
+                    AppState.set('measurement.mode', 'reference');
+                    AppState.set('measurement.referencePoints', []);
+                    Utils.getElement('#measurementInstruction').textContent = '基準オブジェクトの両端をクリックしてください';
+                    Utils.getElement('#measurementMode').textContent = '基準測定中';
+                } else if (mode === 'reference') {
+                    // 基準サイズ確認
+                    const refSize = parseFloat(Utils.getElement('#referenceSize').value);
+                    if (!refSize || refSize <= 0) {
+                        Utils.showMessage('基準オブジェクトのサイズを入力してください', 'warning');
+                        return;
+                    }
+                    
+                    // ターゲット測定開始
+                    AppState.set('measurement.mode', 'target');
+                    AppState.set('measurement.targetPoints', []);
+                    AppState.set('measurement.referenceSize', refSize);
+                    Utils.getElement('#measurementInstruction').textContent = '測定したいオブジェクトの両端をクリックしてください';
+                    Utils.getElement('#measurementMode').textContent = 'ターゲット測定中';
+                }
+                
+                Utils.getElement('#clearMeasurementButton').disabled = false;
+            },
+            
+            handleCanvasClick(e) {
+                const mode = AppState.get('measurement.mode');
+                if (mode === 'none') return;
+                
+                const rect = CaptureManager.canvas.getBoundingClientRect();
+                const canvasX = e.clientX - rect.left;
+                const canvasY = e.clientY - rect.top;
+                
+                // キャンバス座標を画像座標に変換
+                const imageCoords = Utils.canvasToImageCoords(
+                    canvasX, canvasY,
+                    AppState.get('capture.zoomLevel'),
+                    AppState.get('capture.viewOffsetX'),
+                    AppState.get('capture.viewOffsetY')
+                );
+                
+                if (mode === 'reference') {
+                    const points = AppState.get('measurement.referencePoints');
+                    points.push(imageCoords);
+                    AppState.set('measurement.referencePoints', points);
+                    
+                    if (points.length === 2) {
+                        this.calculateReference();
+                    }
+                } else if (mode === 'target') {
+                    const points = AppState.get('measurement.targetPoints');
+                    points.push(imageCoords);
+                    AppState.set('measurement.targetPoints', points);
+                    
+                    if (points.length === 2) {
+                        this.calculateTarget();
+                    }
+                }
+                
+                CaptureManager.redraw();
+            },
+            
+            calculateReference() {
+                const points = AppState.get('measurement.referencePoints');
+                const pixelDistance = Utils.calculateDistance(points[0], points[1]);
+                
+                Utils.getElement('#referencePixelDistance').textContent = pixelDistance.toFixed(2);
+                Utils.getElement('#measurementInstruction').textContent = '基準サイズを入力して「測定開始」をクリックしてください';
+                
+                console.log(`Reference distance: ${pixelDistance} pixels`);
+            },
+            
+            calculateTarget() {
+                const refPoints = AppState.get('measurement.referencePoints');
+                const targetPoints = AppState.get('measurement.targetPoints');
+                const refSize = AppState.get('measurement.referenceSize');
+                
+                const refPixelDistance = Utils.calculateDistance(refPoints[0], refPoints[1]);
+                const targetPixelDistance = Utils.calculateDistance(targetPoints[0], targetPoints[1]);
+                
+                const scale = refSize / refPixelDistance; // mm/pixel
+                const estimatedSize = targetPixelDistance * scale;
+                
+                AppState.set('measurement.scale', scale);
+                AppState.set('measurement.estimatedSize', estimatedSize);
+                AppState.set('measurement.mode', 'completed');
+                
+                // UI更新
+                Utils.getElement('#targetPixelDistance').textContent = targetPixelDistance.toFixed(2);
+                Utils.getElement('#scale').textContent = scale.toFixed(4);
+                Utils.getElement('#estimatedSize').textContent = estimatedSize.toFixed(2);
+                Utils.getElement('#measurementResults').style.display = 'block';
+                Utils.getElement('#measurementInstruction').textContent = `測定完了！推定サイズ: ${estimatedSize.toFixed(2)}mm`;
+                Utils.getElement('#measurementMode').textContent = '測定完了';
+                
+                Utils.showMessage(`測定完了: ${estimatedSize.toFixed(2)}mm`, 'success');
+            },
+            
+            clearMeasurement() {
+                AppState.set('measurement.mode', 'none');
+                AppState.set('measurement.referencePoints', []);
+                AppState.set('measurement.targetPoints', []);
+                AppState.set('measurement.scale', 0);
+                AppState.set('measurement.estimatedSize', 0);
+                
+                Utils.getElement('#measurementResults').style.display = 'none';
+                Utils.getElement('#measurementInstruction').textContent = 'キャプチャ画像で測定を開始してください';
+                Utils.getElement('#measurementMode').textContent = 'なし';
+                Utils.getElement('#clearMeasurementButton').disabled = true;
+                Utils.getElement('#referenceSize').value = '';
+                
+                CaptureManager.redraw();
+                Utils.showMessage('測定をクリアしました', 'info');
+            },
+            
+            drawMeasurementElements() {
+                const ctx = CaptureManager.ctx;
+                if (!ctx) return;
+                
+                const zoom = AppState.get('capture.zoomLevel');
+                const offsetX = AppState.get('capture.viewOffsetX');
+                const offsetY = AppState.get('capture.viewOffsetY');
+                
+                // 基準ポイント描画
+                const refPoints = AppState.get('measurement.referencePoints');
+                if (refPoints.length > 0) {
+                    this.drawPoints(ctx, refPoints, '#ff0000', 'R', zoom, offsetX, offsetY);
+                }
+                
+                // ターゲットポイント描画
+                const targetPoints = AppState.get('measurement.targetPoints');
+                if (targetPoints.length > 0) {
+                    this.drawPoints(ctx, targetPoints, '#0066cc', 'T', zoom, offsetX, offsetY);
+                }
+            },
+            
+            drawPoints(ctx, points, color, label, zoom, offsetX, offsetY) {
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 2;
+                
+                points.forEach((point, index) => {
+                    const canvasCoords = Utils.imageToCanvasCoords(point.x, point.y, zoom, offsetX, offsetY);
+                    
+                    // ポイント描画
+                    ctx.beginPath();
+                    ctx.arc(canvasCoords.x, canvasCoords.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // ラベル描画
+                    ctx.font = '14px Arial';
+                    ctx.fillText(`${label}${index + 1}`, canvasCoords.x + 8, canvasCoords.y - 8);
+                });
+                
+                // 線を描画
+                if (points.length === 2) {
+                    const start = Utils.imageToCanvasCoords(points[0].x, points[0].y, zoom, offsetX, offsetY);
+                    const end = Utils.imageToCanvasCoords(points[1].x, points[1].y, zoom, offsetX, offsetY);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.stroke();
+                }
+            }
+        };
+        
+        // アプリケーション初期化
+        class CarScanApp {
+            constructor() {
+                this.elements = {};
+            }
+            
+            async init() {
+                try {
+                    console.log('🚀 CarScan App starting...');
+                    
+                    // DOM要素取得
+                    this.initDOMElements();
+                    
+                    // モジュール初期化
+                    VideoManager.init();
+                    CaptureManager.init();
+                    MeasurementManager.init();
+                    
+                    // イベントリスナー設定
+                    this.setupEventListeners();
+                    
+                    console.log('✅ CarScan App initialized successfully');
+                    Utils.showMessage('CarScan Pro が起動しました', 'success');
+                    
+                    return true;
+                } catch (error) {
+                    console.error('❌ App initialization failed:', error);
+                    Utils.showMessage('アプリケーションの初期化に失敗しました', 'error');
+                    return false;
+                }
+            }
+            
+            initDOMElements() {
+                this.elements.videoFileInput = Utils.getElement('#videoFileInput');
+                this.elements.playPauseButton = Utils.getElement('#playPauseButton');
+                this.elements.captureButton = Utils.getElement('#captureButton');
+                this.elements.progressSlider = Utils.getElement('#progressSlider');
+                this.elements.zoomInButton = Utils.getElement('#zoomInButton');
+                this.elements.zoomOutButton = Utils.getElement('#zoomOutButton');
+                this.elements.resetZoomButton = Utils.getElement('#resetZoomButton');
+            }
+            
+            setupEventListeners() {
+                // 動画ファイル選択
+                this.elements.videoFileInput.addEventListener('change', (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                        VideoManager.loadVideo(file);
+                    }
+                });
+                
+                // 再生/一時停止
+                this.elements.playPauseButton.addEventListener('click', () => {
+                    VideoManager.togglePlayback();
+                });
+                
+                // フレームキャプチャ
+                this.elements.captureButton.addEventListener('click', () => {
+                    CaptureManager.captureFrame();
+                });
+                
+                // ズームコントロール
+                this.elements.zoomInButton.addEventListener('click', () => {
+                    this.adjustZoom(1.2);
+                });
+                
+                this.elements.zoomOutButton.addEventListener('click', () => {
+                    this.adjustZoom(0.8);
+                });
+                
+                this.elements.resetZoomButton.addEventListener('click', () => {
+                    this.resetZoom();
+                });
+            }
+            
+            adjustZoom(factor) {
+                if (!AppState.get('capture.hasImage')) return;
+                
+                const newZoom = Math.max(0.1, Math.min(5.0, AppState.get('capture.zoomLevel') * factor));
+                AppState.set('capture.zoomLevel', newZoom);
+                
+                CaptureManager.redraw();
+                CaptureManager.updateZoomUI();
+            }
+            
+            resetZoom() {
+                if (!AppState.get('capture.hasImage')) return;
+                
+                AppState.set('capture.zoomLevel', 1);
+                AppState.set('capture.viewOffsetX', 0);
+                AppState.set('capture.viewOffsetY', 0);
+                
+                CaptureManager.redraw();
+                CaptureManager.updateZoomUI();
+            }
+        }
+        
+        // アプリケーション起動
+        document.addEventListener('DOMContentLoaded', async () => {
+            const app = new CarScanApp();
+            await app.init();
+            
+            // グローバルアクセス用（デバッグ）
+            window.carScanApp = app;
+        });
+    </script>
+</body>
+</html>

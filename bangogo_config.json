@@ -1,0 +1,15 @@
+{
+  "mode": "evidence",
+  "prefix": "乙",
+  "start_main": 0,
+  "branch_auto": false,
+  "font_size": 25,
+  "rotation": 0,
+  "offset_x": 95.87333333333338,
+  "offset_y": 281.44,
+  "target_pages": "first",
+  "make_docx": false,
+  "tpl_path": "",
+  "doc_prefix": "証拠説明書",
+  "output_dir": ""
+}

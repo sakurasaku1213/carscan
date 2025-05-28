@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarScan - 統合テスト</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        .test-controls {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background-color: #27ae60; }
+        .status-error { background-color: #e74c3c; }
+        .status-pending { background-color: #f39c12; }
+        
+        .debug-panel {
+            background: #1e1e1e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #2980b9;
+        }
+        
+        .test-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔧 CarScan - 統合テスト</h1>
+        <p>すべてのモジュールと機能をテストするための統合テストページです</p>
+    </header>
+    
+    <div class="container">
+        <!-- テスト制御パネル -->
+        <div class="test-controls">
+            <h2>テスト制御</h2>
+            <button class="test-button" id="runAllTests">すべてのテストを実行</button>
+            <button class="test-button" id="resetTests">テストリセット</button>
+            <button class="test-button" id="clearDebug">デバッグログクリア</button>
+        </div>
+        
+        <!-- アプリケーション初期化テスト -->
+        <div class="test-section">
+            <h3>
+                <span class="status-indicator" id="appStatus"></span>
+                アプリケーション初期化
+            </h3>
+            <button class="test-button" id="testAppInit">アプリ初期化テスト</button>
+            <button class="test-button" id="testModuleLoading">モジュール読み込みテスト</button>
+            <div id="appTestResults"></div>
+        </div>
+        
+        <!-- 動画モジュールテスト -->
+        <div class="test-section">
+            <h3>
+                <span class="status-indicator" id="videoStatus"></span>
+                動画モジュール
+            </h3>
+            <button class="test-button" id="testVideoInit">動画初期化テスト</button>
+            <button class="test-button" id="testVideoLoad">動画読み込みテスト</button>
+            <input type="file" id="testVideoFile" accept="video/*" style="display: none;">
+            <div id="videoTestResults"></div>
+        </div>
+        
+        <!-- キャプチャモジュールテスト -->
+        <div class="test-section">
+            <h3>
+                <span class="status-indicator" id="captureStatus"></span>
+                キャプチャモジュール
+            </h3>
+            <button class="test-button" id="testCaptureInit">キャプチャ初期化テスト</button>
+            <button class="test-button" id="testFrameCapture">フレームキャプチャテスト</button>
+            <button class="test-button" id="testZoomPan">ズーム・パンテスト</button>
+            <div id="captureTestResults"></div>
+        </div>
+        
+        <!-- 測定モジュールテスト -->
+        <div class="test-section">
+            <h3>
+                <span class="status-indicator" id="measurementStatus"></span>
+                測定モジュール
+            </h3>
+            <button class="test-button" id="testMeasurementInit">測定初期化テスト</button>
+            <button class="test-button" id="testPointMarking">ポイントマーキングテスト</button>
+            <button class="test-button" id="testCalculation">計算テスト</button>
+            <div id="measurementTestResults"></div>
+        </div>
+        
+        <!-- イベントシステムテスト -->
+        <div class="test-section">
+            <h3>
+                <span class="status-indicator" id="eventStatus"></span>
+                イベントシステム
+            </h3>
+            <button class="test-button" id="testEventSystem">イベントシステムテスト</button>
+            <button class="test-button" id="testModuleCommunication">モジュール間通信テスト</button>
+            <div id="eventTestResults"></div>
+        </div>
+        
+        <!-- 実際のアプリケーション -->
+        <div class="test-section">
+            <h3>実際のアプリケーション表示</h3>
+            <div id="main-content" class="main-content">
+                <div class="video-section">
+                    <h2>1. 動画をアップロード</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <p>動画ファイルをドラッグ&ドロップ、またはクリックして選択</p>
+                        <input type="file" id="videoInput" accept="video/*" style="display: none;">
+                    </div>
+                    <video id="videoElement" controls style="display: none; max-width: 100%;"></video>
+                </div>
+                
+                <div class="capture-section" style="display: none;">
+                    <h2>2. フレームをキャプチャ</h2>
+                    <button id="captureBtn" class="capture-btn">フレームをキャプチャ</button>
+                    <canvas id="canvas" style="display: none; max-width: 100%;"></canvas>
+                </div>
+                
+                <div class="measurement-section" style="display: none;">
+                    <h2>3. 寸法を測定</h2>
+                    <div class="measurement-controls">
+                        <input type="number" id="referenceSize" placeholder="基準オブジェクトのサイズ (cm)" step="0.1">
+                        <button id="setReferenceBtn" class="measurement-btn">基準点を設定</button>
+                        <button id="measureBtn" class="measurement-btn">測定開始</button>
+                        <button id="clearMeasurementBtn" class="measurement-btn">クリア</button>
+                    </div>
+                    <div id="measurementResults" class="measurement-results"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- デバッグパネル -->
+        <div class="debug-panel" id="debugPanel">
+            <strong>デバッグログ:</strong><br>
+            準備完了...
+        </div>
+    </div>
+    
+    <script type="module">
+        import { App } from '../assets/js/core/app.js';
+        
+        class TestSuite {
+            constructor() {
+                this.app = null;
+                this.testResults = {
+                    app: null,
+                    video: null,
+                    capture: null,
+                    measurement: null,
+                    events: null
+                };
+                this.debugPanel = document.getElementById('debugPanel');
+                this.initializeTests();
+            }
+            
+            initializeTests() {
+                this.setupTestButtons();
+                this.log('🔧 テストスイート初期化完了');
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.debugPanel.innerHTML += `<br>[${timestamp}] ${message}`;
+                this.debugPanel.scrollTop = this.debugPanel.scrollHeight;
+                console.log(message);
+            }
+            
+            updateStatus(module, status) {
+                const indicator = document.getElementById(`${module}Status`);
+                if (indicator) {
+                    indicator.className = `status-indicator status-${status}`;
+                }
+            }
+            
+            setupTestButtons() {
+                // 全体制御
+                document.getElementById('runAllTests').addEventListener('click', () => this.runAllTests());
+                document.getElementById('resetTests').addEventListener('click', () => this.resetTests());
+                document.getElementById('clearDebug').addEventListener('click', () => this.clearDebug());
+                
+                // アプリケーションテスト
+                document.getElementById('testAppInit').addEventListener('click', () => this.testAppInitialization());
+                document.getElementById('testModuleLoading').addEventListener('click', () => this.testModuleLoading());
+                
+                // 動画テスト
+                document.getElementById('testVideoInit').addEventListener('click', () => this.testVideoInitialization());
+                document.getElementById('testVideoLoad').addEventListener('click', () => this.testVideoLoading());
+                
+                // キャプチャテスト
+                document.getElementById('testCaptureInit').addEventListener('click', () => this.testCaptureInitialization());
+                document.getElementById('testFrameCapture').addEventListener('click', () => this.testFrameCapture());
+                document.getElementById('testZoomPan').addEventListener('click', () => this.testZoomPan());
+                
+                // 測定テスト
+                document.getElementById('testMeasurementInit').addEventListener('click', () => this.testMeasurementInitialization());
+                document.getElementById('testPointMarking').addEventListener('click', () => this.testPointMarking());
+                document.getElementById('testCalculation').addEventListener('click', () => this.testCalculation());
+                
+                // イベントテスト
+                document.getElementById('testEventSystem').addEventListener('click', () => this.testEventSystem());
+                document.getElementById('testModuleCommunication').addEventListener('click', () => this.testModuleCommunication());
+            }
+            
+            async runAllTests() {
+                this.log('🚀 全テスト開始...');
+                await this.testAppInitialization();
+                await this.testModuleLoading();
+                await this.testVideoInitialization();
+                await this.testCaptureInitialization();
+                await this.testMeasurementInitialization();
+                await this.testEventSystem();
+                this.log('✅ 全テスト完了');
+            }
+            
+            resetTests() {
+                this.testResults = {
+                    app: null,
+                    video: null,
+                    capture: null,
+                    measurement: null,
+                    events: null
+                };
+                ['app', 'video', 'capture', 'measurement', 'event'].forEach(module => {
+                    this.updateStatus(module, 'pending');
+                });
+                this.log('🔄 テスト状態をリセット');
+            }
+            
+            clearDebug() {
+                this.debugPanel.innerHTML = '<strong>デバッグログ:</strong><br>準備完了...';
+            }
+            
+            async testAppInitialization() {
+                try {
+                    this.log('🧪 アプリケーション初期化テスト開始...');
+                    this.updateStatus('app', 'pending');
+                    
+                    this.app = new App();
+                    const result = await this.app.initialize();
+                    
+                    if (result) {
+                        this.testResults.app = true;
+                        this.updateStatus('app', 'success');
+                        this.log('✅ アプリケーション初期化成功');
+                    } else {
+                        throw new Error('初期化失敗');
+                    }
+                } catch (error) {
+                    this.testResults.app = false;
+                    this.updateStatus('app', 'error');
+                    this.log(`❌ アプリケーション初期化失敗: ${error.message}`);
+                }
+            }
+            
+            async testModuleLoading() {
+                try {
+                    this.log('🧪 モジュール読み込みテスト開始...');
+                    
+                    const modules = ['video', 'capture', 'measurement'];
+                    for (const moduleName of modules) {
+                        if (this.app && this.app[`${moduleName}Manager`]) {
+                            this.log(`✅ ${moduleName}Manager 読み込み成功`);
+                        } else {
+                            throw new Error(`${moduleName}Manager 読み込み失敗`);
+                        }
+                    }
+                    
+                    this.log('✅ 全モジュール読み込み成功');
+                } catch (error) {
+                    this.log(`❌ モジュール読み込み失敗: ${error.message}`);
+                }
+            }
+            
+            async testVideoInitialization() {
+                try {
+                    this.log('🧪 動画モジュール初期化テスト開始...');
+                    this.updateStatus('video', 'pending');
+                    
+                    if (!this.app) {
+                        await this.testAppInitialization();
+                    }
+                    
+                    const result = this.app.videoManager.isInitialized;
+                    
+                    if (result) {
+                        this.testResults.video = true;
+                        this.updateStatus('video', 'success');
+                        this.log('✅ 動画モジュール初期化成功');
+                    } else {
+                        throw new Error('動画モジュール初期化失敗');
+                    }
+                } catch (error) {
+                    this.testResults.video = false;
+                    this.updateStatus('video', 'error');
+                    this.log(`❌ 動画モジュール初期化失敗: ${error.message}`);
+                }
+            }
+            
+            async testVideoLoading() {
+                this.log('🧪 動画読み込みテスト（手動操作が必要）');
+                document.getElementById('testVideoFile').click();
+            }
+            
+            async testCaptureInitialization() {
+                try {
+                    this.log('🧪 キャプチャモジュール初期化テスト開始...');
+                    this.updateStatus('capture', 'pending');
+                    
+                    if (!this.app) {
+                        await this.testAppInitialization();
+                    }
+                    
+                    const result = this.app.captureManager.isInitialized;
+                    
+                    if (result) {
+                        this.testResults.capture = true;
+                        this.updateStatus('capture', 'success');
+                        this.log('✅ キャプチャモジュール初期化成功');
+                    } else {
+                        throw new Error('キャプチャモジュール初期化失敗');
+                    }
+                } catch (error) {
+                    this.testResults.capture = false;
+                    this.updateStatus('capture', 'error');
+                    this.log(`❌ キャプチャモジュール初期化失敗: ${error.message}`);
+                }
+            }
+            
+            async testFrameCapture() {
+                this.log('🧪 フレームキャプチャテスト（動画が必要）');
+                // 実際のキャプチャテストは動画が読み込まれている必要があります
+            }
+            
+            async testZoomPan() {
+                this.log('🧪 ズーム・パンテスト（キャプチャ画像が必要）');
+                // 実際のズーム・パンテストはキャプチャ画像が必要です
+            }
+            
+            async testMeasurementInitialization() {
+                try {
+                    this.log('🧪 測定モジュール初期化テスト開始...');
+                    this.updateStatus('measurement', 'pending');
+                    
+                    if (!this.app) {
+                        await this.testAppInitialization();
+                    }
+                    
+                    const result = this.app.measurementManager.isInitialized;
+                    
+                    if (result) {
+                        this.testResults.measurement = true;
+                        this.updateStatus('measurement', 'success');
+                        this.log('✅ 測定モジュール初期化成功');
+                    } else {
+                        throw new Error('測定モジュール初期化失敗');
+                    }
+                } catch (error) {
+                    this.testResults.measurement = false;
+                    this.updateStatus('measurement', 'error');
+                    this.log(`❌ 測定モジュール初期化失敗: ${error.message}`);
+                }
+            }
+            
+            async testPointMarking() {
+                this.log('🧪 ポイントマーキングテスト（キャプチャ画像が必要）');
+            }
+            
+            async testCalculation() {
+                this.log('🧪 計算テスト（測定ポイントが必要）');
+            }
+            
+            async testEventSystem() {
+                try {
+                    this.log('🧪 イベントシステムテスト開始...');
+                    this.updateStatus('event', 'pending');
+                    
+                    if (!this.app) {
+                        await this.testAppInitialization();
+                    }
+                    
+                    // テストイベントの発火と受信
+                    let eventReceived = false;
+                    this.app.state.on('test-event', () => {
+                        eventReceived = true;
+                    });
+                    
+                    this.app.state.emit('test-event');
+                    
+                    if (eventReceived) {
+                        this.testResults.events = true;
+                        this.updateStatus('event', 'success');
+                        this.log('✅ イベントシステムテスト成功');
+                    } else {
+                        throw new Error('イベントが受信されませんでした');
+                    }
+                } catch (error) {
+                    this.testResults.events = false;
+                    this.updateStatus('event', 'error');
+                    this.log(`❌ イベントシステムテスト失敗: ${error.message}`);
+                }
+            }
+            
+            async testModuleCommunication() {
+                this.log('🧪 モジュール間通信テスト開始...');
+                // モジュール間の通信をテスト
+            }
+        }
+        
+        // テストスイート初期化
+        const testSuite = new TestSuite();
+        
+        // グローバルに公開（デバッグ用）
+        window.testSuite = testSuite;
+    </script>
+</body>
+</html>

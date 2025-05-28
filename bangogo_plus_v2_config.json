@@ -1,0 +1,31 @@
+{
+  "theme": "litera",
+  "mode": "attachment",
+  "prefix": "甲",
+  "start_main": 1,
+  "branch_auto": false,
+  "font_size": 12,
+  "rotation": 0,
+  "offset_x": 482.12266666666676,
+  "offset_y": 29.085333333333324,
+  "stamp_color_rgb": [
+    255,
+    0,
+    0
+  ],
+  "target_pages": "first",
+  "make_docx": false,
+  "tpl_path": "",
+  "doc_prefix": "証拠説明書",
+  "create_backup": false,
+  "backup_dir": "",
+  "auto_save_config": true,
+  "show_file_details_cols": [
+    "size_str",
+    "pages",
+    "modified_str"
+  ],
+  "output_filename_template": "{text}_{original_basename}",
+  "log_level": "INFO",
+  "window_geometry": "1000x700+52+52"
+}

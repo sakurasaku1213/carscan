@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>寸法測定機能テスト - CarScan Pro</title>
+    <style>
+        /* Tailwind-like styles inline */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #f3f4f6; 
+            line-height: 1.5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 2rem 1rem; 
+        }
+        .bg-white { background-color: white; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .p-6 { padding: 1.5rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mr-4 { margin-right: 1rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-sm { font-size: 0.875rem; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+        .text-gray-800 { color: #1f2937; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-500 { color: #6b7280; }
+        .text-blue-600 { color: #2563eb; }
+        .text-yellow-800 { color: #92400e; }
+        .text-red-600 { color: #dc2626; }
+        .text-green-600 { color: #059669; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-gray-900 { background-color: #111827; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-yellow-50 { background-color: #fffbeb; }
+        .w-full { width: 100%; }
+        .max-w-2xl { max-width: 42rem; }
+        .h-auto { height: auto; }
+        .block { display: block; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .space-x-4 > * + * { margin-left: 1rem; }
+        .space-y-1 > * + * { margin-top: 0.25rem; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .overflow-hidden { overflow: hidden; }
+        .overflow-y-auto { overflow-y: auto; }
+        .max-h-40 { max-height: 10rem; }
+        .object-contain { object-fit: contain; }
+        .border { border-width: 1px; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .border-yellow-200 { border-color: #fde68a; }
+        .rounded-md { border-radius: 0.375rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        
+        /* Button styles */
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .bg-blue-500 { background-color: #3b82f6; color: white; }
+        .bg-blue-500:hover:not(:disabled) { background-color: #2563eb; }
+        .bg-green-500 { background-color: #10b981; color: white; }
+        .bg-green-500:hover:not(:disabled) { background-color: #059669; }
+        .bg-gray-500 { background-color: #6b7280; color: white; }
+        .bg-gray-500:hover:not(:disabled) { background-color: #4b5563; }
+        
+        /* File input styles */
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            cursor: pointer;
+        }
+        input[type="file"]:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        /* Video and canvas styles */
+        video, canvas {
+            border-radius: 0.5rem;
+            background-color: #000;
+        }
+        
+        /* Input styles */
+        input[type="number"] {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">寸法測定機能テスト</h1>
+              <!-- 動画アップロード -->
+            <div class="mb-6">
+                <input type="file" id="videoUpload" accept="video/*" class="mb-4">
+                <video id="videoPlayer" class="w-full max-w-2xl h-auto" controls style="display:none; background-color: black; border-radius: 0.5rem;"></video>
+            </div><!-- ボタン -->
+            <div class="mb-6">
+                <button id="captureFrameButton" class="btn bg-blue-500 mr-4" disabled>フレームをキャプチャ</button>
+                <button id="startMeasurementButton" class="btn bg-green-500 mr-4" disabled>測定開始</button>
+                <button id="resetCaptureButton" class="btn bg-gray-500" disabled>キャプチャリセット</button>
+            </div><!-- キャンバスエリア -->
+            <div class="relative bg-gray-900 rounded-lg overflow-hidden mb-6" style="height: 600px;">
+                <canvas id="videoCanvas" class="absolute inset-0 w-full h-full object-contain" style="display: none;"></canvas>
+            </div>
+
+            <!-- キャプチャ画像専用エリア -->
+            <div id="captureImageArea" class="relative bg-gray-900 rounded-lg overflow-hidden mb-6 hidden" style="height: 600px;">
+                <canvas id="captureCanvas" class="absolute inset-0 w-full h-full object-contain"></canvas>
+            </div>            <!-- ズームコントロール -->
+            <div id="zoomControlsContainer" class="flex items-center space-x-4 mb-6 hidden">
+                <button id="zoomInButton" class="btn bg-blue-500">ズーム+</button>
+                <button id="zoomOutButton" class="btn bg-blue-500">ズーム-</button>
+                <button id="zoomResetButton" class="btn bg-gray-500">リセット</button>
+                <span class="text-sm text-gray-600">ホイールでズーム、ドラッグで移動</span>
+            </div>            <!-- キャプチャ専用ズームコントロール -->
+            <div id="captureZoomControlsContainer" class="flex items-center space-x-4 mb-6 hidden">
+                <button id="captureZoomInButton" class="btn bg-blue-500">ズーム+</button>
+                <button id="captureZoomOutButton" class="btn bg-blue-500">ズーム-</button>
+                <button id="captureZoomResetButton" class="btn bg-gray-500">リセット</button>
+                <span class="text-sm text-gray-600">専用エリア - ホイールでズーム、左クリック+ドラッグで移動、測定開始後に左クリックで測定点を配置</span>
+            </div>
+
+            <!-- 寸法測定入力 -->
+            <div id="dimensionMeasurementInputs" class="bg-gray-50 p-4 rounded-lg mb-6 hidden">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">参照オブジェクトの実際のサイズ (mm)</label>
+                    <input type="number" id="refObjectActualSizeInput" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="例: 1800 (車の幅)">
+                </div>
+            </div>
+
+            <!-- 結果表示 -->
+            <div id="resultsArea" class="hidden">
+                <div id="dimensionResultsDisplay" class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-3">寸法測定結果:</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">参照線ピクセル長:</p>
+                            <p class="text-lg font-semibold" id="refPixelLengthText">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">スケール (mm/pixel):</p>
+                            <p class="text-lg font-semibold" id="scaleText">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">対象線ピクセル長:</p>
+                            <p class="text-lg font-semibold" id="targetPixelLengthText">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">推定サイズ (mm):</p>
+                            <p class="text-lg font-semibold text-blue-600" id="estimatedSizeText">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ステータス表示 -->
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p id="commonInstructionText" class="text-sm text-gray-600 mb-2">動画をアップロードして寸法測定を開始してください。</p>
+                <p id="dimensionStatusText" class="text-sm font-medium text-blue-600">待機中</p>
+            </div>            <!-- デバッグ情報 -->
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-2">デバッグ情報</h3>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <p>マウス座標: <span id="debugMousePos">-</span></p>
+                        <p>変換後座標: <span id="debugTransformTest">-</span></p>
+                        <p>最後のクリック: <span id="debugLastClick">-</span></p>
+                    </div>
+                    <div>
+                        <p>ズームレベル: <span id="debugZoomLevel">1.0</span></p>
+                        <p>オフセット: <span id="debugOffset">0, 0</span></p>
+                        <p>測定状態: <span id="debugMeasurementState">idle</span></p>
+                    </div>
+                    <div>
+                        <p>キャプチャズーム: <span id="debugZoom">1.0</span></p>
+                        <p>キャプチャオフセット: <span id="debugOffsetX">0</span>, <span id="debugOffsetY">0</span></p>
+                        <p>画像サイズ: <span id="debugImageSize">-</span></p>
+                        <p>キャンバスサイズ: <span id="debugCanvasSize">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden containers for compatibility -->
+    <div id="sharedControlsContainer" class="hidden"></div>
+    <div id="oncomingAnalysisResultsDisplay" class="hidden"></div>
+    <div id="aiCommentSection" class="hidden">
+        <input id="targetObjectNameInput" type="text">
+        <button id="getAiCommentButton"></button>
+        <div id="aiCommentText"></div>
+    </div>    <!-- JavaScript モジュール -->
+    <!-- モジュールのESエラーのため一時的に無効化、直接実装に切り替え -->
+    <!-- <script src="js/utils/math.js"></script>
+    <script src="js/utils/canvas.js"></script>
+    <script src="js/components/capture-zoom-pan.js"></script>
+    <script src="js/components/capture-marking.js"></script>
+    <script src="js/analysis/dimension.js"></script> -->
+    
+    <script>
+        // DOM要素の取得
+        const videoUpload = document.getElementById('videoUpload');
+        const videoPlayer = document.getElementById('videoPlayer');
+        // const videoCanvas = document.getElementById('videoCanvas'); // Not directly used for dimension measurement display
+        const captureImageArea = document.getElementById('captureImageArea');
+        const captureCanvas = document.getElementById('captureCanvas');
+        const captureFrameButton = document.getElementById('captureFrameButton');
+        const startMeasurementButton = document.getElementById('startMeasurementButton');
+        const resetCaptureButton = document.getElementById('resetCaptureButton');
+        const captureZoomControlsContainer = document.getElementById('captureZoomControlsContainer');
+        const dimensionMeasurementInputs = document.getElementById('dimensionMeasurementInputs');
+        const resultsArea = document.getElementById('resultsArea');
+        const dimensionResultsDisplay = document.getElementById('dimensionResultsDisplay');
+        const refObjectActualSizeInput = document.getElementById('refObjectActualSizeInput');
+        const refPixelLengthText = document.getElementById('refPixelLengthText');
+        const scaleText = document.getElementById('scaleText');
+        const targetPixelLengthText = document.getElementById('targetPixelLengthText');
+        const estimatedSizeText = document.getElementById('estimatedSizeText');
+        const commonInstructionText = document.getElementById('commonInstructionText');
+        const dimensionStatusText = document.getElementById('dimensionStatusText');
+        
+        // 重要な要素の存在確認
+        const requiredElements = [
+            { name: 'videoUpload', element: videoUpload },
+            { name: 'videoPlayer', element: videoPlayer },
+            { name: 'captureCanvas', element: captureCanvas },
+            { name: 'captureFrameButton', element: captureFrameButton },
+            { name: 'dimensionStatusText', element: dimensionStatusText }
+        ];
+          const missingElements = requiredElements.filter(req => !req.element);
+        if (missingElements.length > 0) {
+            console.error("❌ Missing required DOM elements:", missingElements.map(req => req.name));
+            const errorMsg = "必要なDOM要素が見つかりません: " + missingElements.map(req => req.name).join(', ');
+            alert(errorMsg);
+            throw new Error(errorMsg); // returnの代わりにthrowを使用
+        } else {
+            console.log("✅ All required DOM elements found");
+        }
+        
+        // キャンバスコンテキスト
+        // const visibleCtx = videoCanvas.getContext('2d'); // Not directly used
+        const captureCtx = captureCanvas.getContext('2d'); // Used by capture-zoom-pan and capture-marking
+        
+        // 変数初期化
+        let currentAppMode = 'none';
+        let measurementState = 'idle'; // More detailed states will be managed within dimension.js or here
+        let points = []; // General points, might be managed by dimension.js
+        let pointsForRefLine = []; // Specific for test page logic if not fully in dimension.js
+        let pointsForTargetLine = []; // Specific for test page logic
+        let refPixelLength = 0;
+        let scale = 0;
+        let currentEstimatedSizeMm = 0;
+        // zoomLevel, viewOffsetX, viewOffsetY are for the main video, not used in capture mode
+        let videoNaturalWidth = 0;
+        let videoNaturalHeight = 0;        // sourceFrameCanvas can be managed by dimension.js or passed to it.
+        // let sourceFrameCanvas = document.createElement('canvas'); 
+        // let sourceFrameCtx = sourceFrameCanvas.getContext('2d');
+        
+        // キャプチャ機能用変数 (直接実装)
+        let captureZoomLevel = 1.0;
+        let captureViewOffsetX = 0;
+        let captureViewOffsetY = 0;
+        let captureImageWidth = 0;
+        let captureImageHeight = 0;
+        let captureIsPanning = false;
+        let captureLastMouseX = 0;
+        let captureLastMouseY = 0;
+        let capturedImageElement = null; // キャプチャされた画像データ
+
+        // 測定機能用変数
+        let measurementMode = 'none'; // 'none', 'reference', 'target'
+        let measurementPoints = []; // 測定点の配列
+        let referencePoints = []; // 参照線の2点
+        let targetPoints = []; // 測定対象線の2点
+        let isDrawingLine = false; // 線を描画中かどうか
+
+        // グローバルなキャプチャ画像要素
+        if (!window.capturedImageElement) {
+            window.capturedImageElement = new Image();
+        }
+
+        // 座標変換機能
+        function canvasToImageCoords(canvasX, canvasY) {
+            // キャンバス座標を元画像座標に変換
+            const imageX = (canvasX - captureViewOffsetX) / captureZoomLevel;
+            const imageY = (canvasY - captureViewOffsetY) / captureZoomLevel;
+            return { x: imageX, y: imageY };
+        }
+
+        function imageToCanvasCoords(imageX, imageY) {
+            // 元画像座標をキャンバス座標に変換
+            const canvasX = imageX * captureZoomLevel + captureViewOffsetX;
+            const canvasY = imageY * captureZoomLevel + captureViewOffsetY;
+            return { x: canvasX, y: canvasY };
+        }
+
+        // 距離計算
+        function calculateDistance(point1, point2) {
+            const dx = point2.x - point1.x;
+            const dy = point2.y - point1.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // ズーム・パン機能の実装
+        function initCaptureZoomPan() {
+            const canvas = captureCanvas;
+            if (!canvas) return;
+
+            // マウスホイールでズーム
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                const oldZoom = captureZoomLevel;
+                captureZoomLevel = Math.max(0.1, Math.min(10, captureZoomLevel * zoomFactor));
+                
+                // ズーム中心をマウス位置に合わせる
+                const zoomRatio = captureZoomLevel / oldZoom;
+                captureViewOffsetX = mouseX - (mouseX - captureViewOffsetX) * zoomRatio;
+                captureViewOffsetY = mouseY - (mouseY - captureViewOffsetY) * zoomRatio;
+                  redrawCaptureCanvas();
+                updateCaptureDebugInfo();
+            });
+            
+            // 左クリック+ドラッグでパン、測定モードではクリックで点配置
+            let clickStartTime = 0;
+            let clickStartX = 0;
+            let clickStartY = 0;
+            
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // 左クリック
+                    e.preventDefault();
+                    clickStartTime = Date.now();
+                    clickStartX = e.clientX;
+                    clickStartY = e.clientY;
+                    
+                    if (measurementMode === 'none') {
+                        // パンモード
+                        captureIsPanning = true;
+                        captureLastMouseX = e.clientX;
+                        captureLastMouseY = e.clientY;
+                        canvas.style.cursor = 'grabbing';
+                    }
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (captureIsPanning && measurementMode === 'none') {
+                    const deltaX = e.clientX - captureLastMouseX;
+                    const deltaY = e.clientY - captureLastMouseY;
+                    
+                    captureViewOffsetX += deltaX;
+                    captureViewOffsetY += deltaY;
+                    
+                    captureLastMouseX = e.clientX;
+                    captureLastMouseY = e.clientY;
+                    
+                    redrawCaptureCanvas();
+                    updateCaptureDebugInfo();
+                } else if (measurementMode === 'none') {
+                    // ホバー時のカーソル表示
+                    canvas.style.cursor = 'grab';
+                } else {
+                    // 測定モード時はクロスヘアカーソル
+                    canvas.style.cursor = 'crosshair';
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) {
+                    const clickDuration = Date.now() - clickStartTime;
+                    const clickDistance = Math.sqrt(
+                        (e.clientX - clickStartX) ** 2 + (e.clientY - clickStartY) ** 2
+                    );
+                    
+                    // クリック判定（短時間かつ移動距離が小さい）
+                    if (clickDuration < 200 && clickDistance < 5) {
+                        if (measurementMode !== 'none') {
+                            handleMeasurementClick(e);
+                        }
+                    }
+                    
+                    if (captureIsPanning) {
+                        captureIsPanning = false;
+                        canvas.style.cursor = measurementMode === 'none' ? 'grab' : 'crosshair';
+                    }
+                }
+            });            // マウスがキャンバスから離れた時
+            canvas.addEventListener('mouseleave', () => {
+                canvas.style.cursor = 'default';
+            });
+            
+            // 右クリックメニューを無効化（ブラウザのコンテキストメニューを防ぐため）
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            console.log("✅ Capture zoom/pan initialized");
+        }
+
+        // 測定クリック処理
+        function handleMeasurementClick(e) {
+            const rect = captureCanvas.getBoundingClientRect();
+            const canvasX = e.clientX - rect.left;
+            const canvasY = e.clientY - rect.top;
+            
+            // キャンバス座標を画像座標に変換
+            const imageCoords = canvasToImageCoords(canvasX, canvasY);
+            
+            // 画像範囲内かチェック
+            if (imageCoords.x < 0 || imageCoords.x > captureImageWidth || 
+                imageCoords.y < 0 || imageCoords.y > captureImageHeight) {
+                console.log('クリック位置が画像範囲外です');
+                return;
+            }
+
+            if (measurementMode === 'reference') {
+                // 参照線の点を追加
+                referencePoints.push(imageCoords);
+                console.log(`参照点${referencePoints.length}を追加:`, imageCoords);
+                
+                if (referencePoints.length >= 2) {
+                    const distance = calculateDistance(referencePoints[0], referencePoints[1]);
+                    console.log(`参照線の長さ: ${distance.toFixed(2)} pixels`);
+                    
+                    // UI更新
+                    document.getElementById('refPixelLengthText').textContent = distance.toFixed(2);
+                    showUIMessage(dimensionStatusText, "参照線を設定しました。参照オブジェクトの実際のサイズを入力してください。");
+                    showUIMessage(commonInstructionText, "参照オブジェクトの実際のサイズ（mm）を入力し、次に測定対象線を設定してください。");
+                    
+                    // 測定対象線モードに切り替え
+                    measurementMode = 'target';
+                    updateMeasurementModeUI();
+                }
+            } else if (measurementMode === 'target') {
+                // 測定対象線の点を追加
+                targetPoints.push(imageCoords);
+                console.log(`測定点${targetPoints.length}を追加:`, imageCoords);
+                
+                if (targetPoints.length >= 2) {
+                    const distance = calculateDistance(targetPoints[0], targetPoints[1]);
+                    console.log(`測定線の長さ: ${distance.toFixed(2)} pixels`);
+                    
+                    // 寸法計算を実行
+                    calculateDimensions();
+                    
+                    // 測定完了
+                    measurementMode = 'completed';
+                    updateMeasurementModeUI();
+                }
+            }
+
+            redrawCaptureCanvas();
+            updateCaptureDebugInfo();
+        }
+
+        // 寸法計算
+        function calculateDimensions() {
+            if (referencePoints.length < 2 || targetPoints.length < 2) return;
+
+            const refPixelDistance = calculateDistance(referencePoints[0], referencePoints[1]);
+            const targetPixelDistance = calculateDistance(targetPoints[0], targetPoints[1]);
+            
+            // 参照オブジェクトの実際のサイズを取得
+            const refActualSize = parseFloat(document.getElementById('refObjectActualSizeInput').value);
+            
+            if (!refActualSize || refActualSize <= 0) {
+                showUIMessage(dimensionStatusText, "参照オブジェクトの実際のサイズを入力してください。");
+                return;
+            }
+
+            // スケール計算（mm/pixel）
+            const scale = refActualSize / refPixelDistance;
+            
+            // 測定対象の実際のサイズ計算
+            const estimatedSize = targetPixelDistance * scale;
+
+            // 結果をUIに表示
+            document.getElementById('refPixelLengthText').textContent = refPixelDistance.toFixed(2);
+            document.getElementById('targetPixelLengthText').textContent = targetPixelDistance.toFixed(2);
+            document.getElementById('scaleText').textContent = scale.toFixed(4);
+            document.getElementById('estimatedSizeText').textContent = estimatedSize.toFixed(2) + ' mm';
+
+            console.log(`測定結果: ${estimatedSize.toFixed(2)} mm`);
+            showUIMessage(dimensionStatusText, "測定完了！");
+            showUIMessage(commonInstructionText, `測定結果: ${estimatedSize.toFixed(2)} mm`);
+        }
+
+        // 測定モードUI更新
+        function updateMeasurementModeUI() {
+            const statusText = document.getElementById('debugMeasurementState');
+            if (statusText) {
+                statusText.textContent = measurementMode;
+            }
+
+            // ボタンの状態更新
+            const startBtn = document.getElementById('startMeasurementButton');
+            if (measurementMode === 'reference') {
+                startBtn.textContent = '参照線設定中...';
+                startBtn.disabled = true;
+            } else if (measurementMode === 'target') {
+                startBtn.textContent = '測定線設定中...';
+                startBtn.disabled = true;
+            } else if (measurementMode === 'completed') {
+                startBtn.textContent = '測定完了';
+                startBtn.disabled = false;
+            } else {
+                startBtn.textContent = '測定開始';
+                startBtn.disabled = false;
+            }
+        }
+
+        // キャプチャキャンバス再描画
+        function redrawCaptureCanvas() {
+            if (!captureCanvas || !capturedImageElement) return;
+            
+            const ctx = captureCanvas.getContext('2d');
+            ctx.clearRect(0, 0, captureCanvas.width, captureCanvas.height);
+            
+            if (capturedImageElement && capturedImageElement.complete) {
+                const drawWidth = captureImageWidth * captureZoomLevel;
+                const drawHeight = captureImageHeight * captureZoomLevel;
+                
+                ctx.drawImage(
+                    capturedImageElement,
+                    captureViewOffsetX,
+                    captureViewOffsetY,
+                    drawWidth,
+                    drawHeight
+                );
+            }
+
+            // 測定点と線を描画
+            drawMeasurementElements(ctx);
+        }
+
+        // 測定要素描画
+        function drawMeasurementElements(ctx) {
+            // 参照線を描画（赤）
+            if (referencePoints.length >= 2) {
+                drawLine(ctx, referencePoints[0], referencePoints[1], '#FF0000', 3, '参照線');
+            } else if (referencePoints.length === 1) {
+                drawPoint(ctx, referencePoints[0], '#FF0000', '参照点1');
+            }
+
+            // 測定対象線を描画（青）
+            if (targetPoints.length >= 2) {
+                drawLine(ctx, targetPoints[0], targetPoints[1], '#0000FF', 3, '測定線');
+            } else if (targetPoints.length === 1) {
+                drawPoint(ctx, targetPoints[0], '#0000FF', '測定点1');
+            }
+        }
+
+        // 線を描画
+        function drawLine(ctx, point1, point2, color, width, label) {
+            const canvasPoint1 = imageToCanvasCoords(point1.x, point1.y);
+            const canvasPoint2 = imageToCanvasCoords(point2.x, point2.y);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.setLineDash([]);
+            
+            ctx.beginPath();
+            ctx.moveTo(canvasPoint1.x, canvasPoint1.y);
+            ctx.lineTo(canvasPoint2.x, canvasPoint2.y);
+            ctx.stroke();
+
+            // 点を描画
+            drawPoint(ctx, point1, color, '');
+            drawPoint(ctx, point2, color, '');
+
+            // ラベルを描画
+            const midX = (canvasPoint1.x + canvasPoint2.x) / 2;
+            const midY = (canvasPoint1.y + canvasPoint2.y) / 2;
+            
+            ctx.fillStyle = color;
+            ctx.font = '14px Arial';
+            ctx.fillText(label, midX + 10, midY - 10);
+        }
+
+        // 点を描画
+        function drawPoint(ctx, point, color, label) {
+            const canvasPoint = imageToCanvasCoords(point.x, point.y);
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(canvasPoint.x, canvasPoint.y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 白い縁取り
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            if (label) {
+                ctx.fillStyle = color;
+                ctx.font = '12px Arial';
+                ctx.fillText(label, canvasPoint.x + 10, canvasPoint.y - 10);
+            }
+        }
+
+        // ズームコントロールボタンの実装
+        function setupCaptureZoomControls() {
+            const zoomInBtn = document.getElementById('captureZoomInButton');
+            const zoomOutBtn = document.getElementById('captureZoomOutButton');
+            const zoomResetBtn = document.getElementById('captureZoomResetButton');
+
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                    captureZoomLevel = Math.min(10, captureZoomLevel * 1.2);
+                    redrawCaptureCanvas();
+                    updateCaptureDebugInfo();
+                });
+            }
+
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                    captureZoomLevel = Math.max(0.1, captureZoomLevel * 0.8);
+                    redrawCaptureCanvas();
+                    updateCaptureDebugInfo();
+                });
+            }
+
+            if (zoomResetBtn) {
+                zoomResetBtn.addEventListener('click', () => {
+                    captureZoomLevel = 1.0;
+                    captureViewOffsetX = 0;
+                    captureViewOffsetY = 0;
+                    redrawCaptureCanvas();
+                    updateCaptureDebugInfo();
+                });
+            }
+        }        // デバッグ情報更新
+        function updateCaptureDebugInfo() {
+            const debugZoom = document.getElementById('debugZoom');
+            const debugOffsetX = document.getElementById('debugOffsetX');
+            const debugOffsetY = document.getElementById('debugOffsetY');
+            const debugImageSize = document.getElementById('debugImageSize');
+            const debugCanvasSize = document.getElementById('debugCanvasSize');
+            
+            if (debugZoom) debugZoom.textContent = captureZoomLevel.toFixed(2);
+            if (debugOffsetX) debugOffsetX.textContent = captureViewOffsetX.toFixed(1);
+            if (debugOffsetY) debugOffsetY.textContent = captureViewOffsetY.toFixed(1);
+            if (debugImageSize) debugImageSize.textContent = `${captureImageWidth}x${captureImageHeight}`;
+            if (debugCanvasSize && captureCanvas) debugCanvasSize.textContent = `${captureCanvas.width}x${captureCanvas.height}`;
+        }// グローバルヘルパー関数 (もし未定義の場合)
+        if (typeof showUIMessage === 'undefined') {
+            function showUIMessage(element, message) {
+                console.log("showUIMessage called:", element?.id || 'unknown element', message);
+                if (element && typeof element.textContent !== 'undefined') {
+                    element.textContent = message;
+                } else {
+                    console.warn("showUIMessage: Invalid element provided or textContent not available.", element);
+                    // Fallback: try to find element by ID if a string was passed
+                    if (typeof element === 'string') {
+                        const foundElement = document.getElementById(element);
+                        if (foundElement) {
+                            foundElement.textContent = message;
+                        }
+                    }
+                }
+            }
+            window.showUIMessage = showUIMessage; // Make it globally accessible
+        }
+        // 'showMessage' is used in some existing stubs, ensure it's defined or replaced
+        if (typeof showMessage === 'undefined') { 
+            function showMessage(message) {
+                console.log("showMessage called:", message);
+                const statusEl = document.getElementById('dimensionStatusText');
+                if (statusEl) {
+                    showUIMessage(statusEl, message);
+                } else {
+                    alert(message); // Fallback
+                }
+                console.log("showMessage:", message);
+            }
+            window.showMessage = showMessage; // Make it globally accessible
+        }
+
+
+        // デバッグ情報更新 (必要に応じて調整)
+        function updateDebugInfo(e) {
+            // This function might need to be adapted for the captureCanvas if debugging is needed there
+            // For now, it's related to videoCanvas which is not the primary focus for capture.
+            if (!captureCanvas || !window.getCaptureTransformState) return; // Check for capture canvas and state function
+            
+            const rect = captureCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const { zoom, offsetX, offsetY } = window.getCaptureTransformState();
+            const imageCoords = window.toCaptureImageCoords(mouseX, mouseY, zoom, offsetX, offsetY);
+
+
+            document.getElementById('debugMousePos').textContent = `${mouseX.toFixed(1)}, ${mouseY.toFixed(1)}`;
+            if(document.getElementById('debugCanvasPos')) document.getElementById('debugCanvasPos').textContent = `${mouseX.toFixed(1)}, ${mouseY.toFixed(1)}`; // Canvas pos is same as mouse for captureCanvas
+            if(document.getElementById('debugImagePos')) document.getElementById('debugImagePos').textContent = imageCoords ? `${imageCoords.x.toFixed(1)}, ${imageCoords.y.toFixed(1)}` : '-';
+            
+            document.getElementById('debugZoom').textContent = zoom.toFixed(2);
+            document.getElementById('debugOffsetX').textContent = offsetX.toFixed(1);
+            document.getElementById('debugOffsetY').textContent = offsetY.toFixed(1);
+            document.getElementById('debugMeasurementState').textContent = measurementState; // This state needs to be accurately updated
+            if(document.getElementById('debugImageSize')) document.getElementById('debugImageSize').textContent = `${captureImageWidth}x${captureImageHeight}`;
+            if(document.getElementById('debugCanvasSize')) document.getElementById('debugCanvasSize').textContent = `${captureCanvas.width}x${captureCanvas.height}`;
+        }
+        if(captureCanvas) captureCanvas.addEventListener('mousemove', updateDebugInfo);        // イベントリスナーの設定
+        function initializeApp() {
+            console.log("� initializeApp function started");
+            
+            // 初期ボタン状態
+            captureFrameButton.disabled = true;
+            startMeasurementButton.disabled = true;
+            resetCaptureButton.disabled = true;
+            
+            console.log("🔧 Adding event listeners...");
+            console.log("📊 初期状態確認:");
+            console.log(`  - Video element: ${videoPlayer ? '✅' : '❌'}`);
+            console.log(`  - Capture canvas: ${captureCanvas ? '✅' : '❌'}`);
+            console.log(`  - Buttons: Frame=${captureFrameButton ? '✅' : '❌'}, Measurement=${startMeasurementButton ? '✅' : '❌'}, Reset=${resetCaptureButton ? '✅' : '❌'}`);
+            console.log(`  - Status elements: Status=${dimensionStatusText ? '✅' : '❌'}, Instruction=${commonInstructionText ? '✅' : '❌'}`);
+            
+              // 動画アップロード処理（改良版）
+            videoUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                console.log(`📁 ファイル選択: ${file.name} (${file.type}, ${(file.size/1024/1024).toFixed(2)}MB)`);
+                showUIMessage(dimensionStatusText, "動画を処理中...");
+                
+                // ボタンを無効化
+                captureFrameButton.disabled = true;
+                startMeasurementButton.disabled = true;
+                resetCaptureButton.disabled = true;
+                videoPlayer.style.display = 'none';
+                captureImageArea.classList.add('hidden');
+                  // ObjectURL作成
+                const url = URL.createObjectURL(file);
+                console.log("🔗 ObjectURL作成:", url.substring(0, 50) + "...");
+                
+                // 動画準備状態チェック関数
+                let videoReadyHandled = false;
+                function checkVideoReady() {
+                    if (videoReadyHandled) return;
+                    
+                    const isReady = videoPlayer.readyState >= 1 && 
+                                   videoPlayer.videoWidth > 0 && 
+                                   videoPlayer.videoHeight > 0;
+                    
+                    console.log(`📊 動画状態チェック: ReadyState=${videoPlayer.readyState}, Size=${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`);
+                    
+                    if (isReady) {
+                        videoReadyHandled = true;
+                        videoNaturalWidth = videoPlayer.videoWidth;
+                        videoNaturalHeight = videoPlayer.videoHeight;
+                        
+                        console.log('✅ 動画読み込み成功');
+                        videoPlayer.style.display = 'block';
+                        captureFrameButton.disabled = false;
+                        showUIMessage(dimensionStatusText, "動画の準備ができました");
+                        showUIMessage(commonInstructionText, "動画の再生スライダーを操作してキャプチャしたいフレームを選択し、「フレームをキャプチャ」ボタンを押してください。");
+                        
+                        // イベントリスナーを削除（重複実行防止）
+                        videoPlayer.removeEventListener('loadedmetadata', checkVideoReady);
+                        videoPlayer.removeEventListener('canplay', checkVideoReady);
+                        videoPlayer.removeEventListener('loadeddata', checkVideoReady);
+                        videoPlayer.removeEventListener('canplaythrough', checkVideoReady);
+                    }
+                }
+                
+                // エラーハンドリング
+                function handleVideoError(e) {
+                    let errorMsg = '不明なエラー';
+                    if (videoPlayer.error) {
+                        const errors = {
+                            1: 'MEDIA_ERR_ABORTED - ユーザーによって中止されました',
+                            2: 'MEDIA_ERR_NETWORK - ネットワークエラーが発生しました',
+                            3: 'MEDIA_ERR_DECODE - デコードエラーが発生しました',
+                            4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - サポートされていないファイル形式です'
+                        };
+                        errorMsg = errors[videoPlayer.error.code] || `エラーコード: ${videoPlayer.error.code}`;
+                    }
+                    console.error(`❌ 動画エラー: ${errorMsg}`);
+                    showUIMessage(dimensionStatusText, `エラー: ${errorMsg}`);
+                    showUIMessage(commonInstructionText, "別の動画ファイルを試すか、ファイル形式を確認してください。");
+                }
+                
+                // より多くのイベントをリッスン
+                const videoEvents = ['loadedmetadata', 'canplay', 'loadeddata', 'canplaythrough'];
+                videoEvents.forEach(eventName => {
+                    videoPlayer.addEventListener(eventName, () => {
+                        console.log(`🎬 Video event: ${eventName}`);
+                        checkVideoReady();
+                    });
+                });
+                
+                videoPlayer.addEventListener('error', handleVideoError);
+                
+                // 進捗確認のための追加イベント
+                videoPlayer.addEventListener('loadstart', () => console.log('🎬 Video loadstart'));
+                videoPlayer.addEventListener('progress', () => console.log('🎬 Video progress'));
+                
+                // タイムアウト設定（延長）
+                setTimeout(() => {
+                    if (!videoReadyHandled) {
+                        console.warn("⚠️ 動画読み込みタイムアウト (5秒)");
+                        if (videoPlayer.readyState >= 1 && videoPlayer.videoWidth > 0) {
+                            console.log("🔄 強制的に準備完了状態にします");
+                            checkVideoReady();
+                        } else {
+                            showUIMessage(dimensionStatusText, "動画の読み込みに時間がかかっています...");
+                        }
+                    }
+                }, 5000);
+                
+                // 動画ソース設定
+                videoPlayer.src = url;
+                console.log('📺 動画ソース設定完了');
+            });
+            
+            // フレームキャプチャ処理（簡易版）
+            captureFrameButton.addEventListener('click', () => {
+                if (!videoPlayer.src || videoPlayer.readyState < videoPlayer.HAVE_METADATA) {
+                    showUIMessage(dimensionStatusText, "エラー: 動画データが完全に読み込まれていません。");
+                    return;
+                }
+                if (videoNaturalWidth === 0 || videoNaturalHeight === 0) {
+                    showUIMessage(dimensionStatusText, "エラー: 動画のメタデータがまだ読み込まれていません。少々お待ちください。");
+                    return;
+                }
+                
+                console.log('フレームキャプチャ開始');
+                videoPlayer.pause();
+                showUIMessage(dimensionStatusText, "フレームをキャプチャ中...");
+                
+                try {
+                    // キャンバスに現在のフレームを描画
+                    captureCanvas.width = videoNaturalWidth;
+                    captureCanvas.height = videoNaturalHeight;
+                    
+                    const ctx = captureCanvas.getContext('2d');
+                    ctx.drawImage(videoPlayer, 0, 0, videoNaturalWidth, videoNaturalHeight);
+                    
+                    captureImageWidth = videoNaturalWidth;
+                    captureImageHeight = videoNaturalHeight;
+                    
+                    // エリア表示
+                    captureImageArea.classList.remove('hidden');
+                    captureZoomControlsContainer.classList.remove('hidden');
+                    
+                    // ボタン状態更新
+                    captureFrameButton.textContent = 'フレーム再キャプチャ';
+                    captureFrameButton.disabled = false;
+                    startMeasurementButton.disabled = false;
+                    resetCaptureButton.disabled = false;
+                      console.log('✅ フレームキャプチャ成功');
+                    showUIMessage(dimensionStatusText, "フレームをキャプチャしました。");
+                    showUIMessage(commonInstructionText, "「測定開始」ボタンを押して寸法測定を開始するか、別のフレームをキャプチャしてください。");
+                    
+                    // キャプチャ画像データを設定
+                    capturedImageElement = new Image();
+                    capturedImageElement.onload = function() {
+                        captureImageWidth = this.width;
+                        captureImageHeight = this.height;
+                        
+                        // ズーム・パン機能を初期化
+                        initCaptureZoomPan();
+                        setupCaptureZoomControls();
+                        
+                        // 初期描画
+                        redrawCaptureCanvas();
+                        updateCaptureDebugInfo();
+                        
+                        console.log('🎯 ズーム・パン機能が有効になりました');
+                        console.log(`📏 画像サイズ: ${captureImageWidth}x${captureImageHeight}`);
+                    };
+                    capturedImageElement.src = captureCanvas.toDataURL();
+                    
+                } catch (error) {
+                    console.error(`キャプチャエラー: ${error.message}`);
+                    showUIMessage(dimensionStatusText, "フレームキャプチャに失敗しました。");
+                }
+            });
+              // 測定開始処理
+            startMeasurementButton.addEventListener('click', () => {
+                console.log('測定開始がクリックされました');
+                
+                if (measurementMode === 'none') {
+                    // 測定開始
+                    measurementMode = 'reference';
+                    referencePoints = [];
+                    targetPoints = [];
+                    
+                    // UI表示
+                    dimensionMeasurementInputs.classList.remove('hidden');
+                    resultsArea.classList.remove('hidden');
+                    
+                    showUIMessage(dimensionStatusText, "参照線を設定してください。");
+                    showUIMessage(commonInstructionText, "まず参照オブジェクト（既知のサイズ）の両端を左クリックして参照線を設定してください。");
+                    
+                    updateMeasurementModeUI();
+                    
+                } else if (measurementMode === 'completed') {
+                    // 測定リセット
+                    measurementMode = 'none';
+                    referencePoints = [];
+                    targetPoints = [];
+                    
+                    // UI表示
+                    showUIMessage(dimensionStatusText, "測定をリセットしました。");
+                    showUIMessage(commonInstructionText, "「測定開始」ボタンを押して新しい測定を開始してください。");
+                    
+                    // 結果クリア
+                    document.getElementById('refPixelLengthText').textContent = '-';
+                    document.getElementById('targetPixelLengthText').textContent = '-';
+                    document.getElementById('scaleText').textContent = '-';
+                    document.getElementById('estimatedSizeText').textContent = '-';
+                    document.getElementById('refObjectActualSizeInput').value = '';
+                    
+                    updateMeasurementModeUI();
+                    redrawCaptureCanvas();
+                }
+            });
+              // リセット処理
+            resetCaptureButton.addEventListener('click', () => {
+                console.log('キャプチャリセット');
+                
+                // 表示エリアを隠す
+                captureImageArea.classList.add('hidden');
+                captureZoomControlsContainer.classList.add('hidden');
+                dimensionMeasurementInputs.classList.add('hidden');
+                resultsArea.classList.add('hidden');
+                
+                // 測定データをリセット
+                measurementMode = 'none';
+                referencePoints = [];
+                targetPoints = [];
+                captureZoomLevel = 1.0;
+                captureViewOffsetX = 0;
+                captureViewOffsetY = 0;
+                
+                // ボタン状態リセット
+                captureFrameButton.textContent = 'フレームをキャプチャ';
+                startMeasurementButton.disabled = true;
+                resetCaptureButton.disabled = true;
+                
+                updateMeasurementModeUI();
+                
+                showUIMessage(dimensionStatusText, "キャプチャをリセットしました。");
+                showUIMessage(commonInstructionText, "新しいフレームをキャプチャしてください。");
+            });
+              console.log("✅ Event listeners added successfully");        }
+        
+        // 初期メッセージと状態設定
+        function updateInitialState() {
+            showUIMessage(dimensionStatusText, "待機中");
+            showUIMessage(commonInstructionText, "動画をアップロードして寸法測定を開始してください。");
+        }
+          // アプリケーション初期化
+        try {
+            console.log("🚀 Starting application initialization...");
+            
+            // DOM要素の再確認
+            console.log("🔍 DOM要素の最終確認:");
+            const criticalElements = {
+                videoUpload, videoPlayer, captureCanvas, captureFrameButton,
+                startMeasurementButton, resetCaptureButton, dimensionStatusText, commonInstructionText
+            };
+            
+            for (const [name, element] of Object.entries(criticalElements)) {
+                if (!element) {
+                    throw new Error(`重要な要素が見つかりません: ${name}`);
+                }
+                console.log(`  ✅ ${name}: OK`);
+            }
+              initializeApp();
+            updateInitialState();
+            
+            // デバッグ情報の初期化
+            updateCaptureDebugInfo();
+            
+            console.log("✅ Application initialized successfully");
+            
+        } catch (error) {
+            console.error("❌ Error during application initialization:", error);
+            console.error("Stack trace:", error.stack);
+            
+            // より詳細なエラー情報をユーザーに表示
+            const errorDetails = `
+初期化エラー: ${error.message}
+
+このエラーが発生した場合は以下を確認してください：
+1. ブラウザがJavaScriptを有効にしている
+2. ブラウザの開発者ツールでエラーメッセージを確認
+3. ページを再読み込みしてみる
+
+技術詳細: ${error.stack}`;
+            
+            alert(errorDetails);
+            
+            // フォールバック: 基本的なエラー表示
+            document.body.innerHTML += `
+                <div style="background: #ffebee; border: 2px solid #f44336; padding: 20px; margin: 20px; border-radius: 4px;">
+                    <h2 style="color: #c62828; margin: 0 0 10px 0;">初期化エラー</h2>
+                    <p style="color: #c62828; margin: 0;"><strong>エラー:</strong> ${error.message}</p>
+                    <p style="color: #666; margin: 10px 0 0 0; font-size: 12px;">ページを再読み込みしてください。問題が続く場合は、ブラウザの開発者ツールでエラーを確認してください。</p>
+                </div>`;
+        }
+    </script>
+</body>
+</html>

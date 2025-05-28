@@ -3,50 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarScan Pro - 高度動画解析ツール</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>CarScan Pro - 動画寸法測定システム</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <style>
+        /* ページ固有のスタイル */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .step-item.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+        
+        .step-item.completed {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .video-section,
+        .capture-section,
+        .measurement-section,
+        .results-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .instruction-panel {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .status-item {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .status-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .status-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .canvas-container {
+            position: relative;
+            background: #f8fafc;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .canvas-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .measurement-results {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+        }
+        
+        .result-row:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #0369a1;
+        }
+        
+        .debug-panel {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+        }
+        
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #059669;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-
-    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
-        <header class="mb-6 text-center">
-            <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CarScan Pro</h1>
-            <p class="text-gray-600 mt-2" id="appSubtitle">高度動画解析ツール - 寸法測定・軌跡追跡・速度分析</p>
+<body>
+    <div class="main-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <h1>CarScan Pro</h1>
+            <p>高精度動画寸法測定システム</p>
         </header>
-
-        <div class="mb-6">
-            <label for="videoFile" class="block text-sm font-medium text-gray-700 mb-1">MP4ファイルを選択:</label>
-            <input type="file" id="videoFile" accept="video/mp4" class="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100 transition-colors duration-150"/>
-        </div>        <div id="videoArea" class="mb-6 video-container">
-            <video id="videoPlayer" controls>
-                <p class="text-center text-gray-500 p-4">動画ファイルを選択すると、ここに表示されます。</p>
-            </video>
-            <canvas id="videoCanvas"></canvas>
-        </div>        <!-- キャプチャ画像表示エリア -->
-        <div id="captureImageArea" class="mb-6 hidden">
-            <div class="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">📸 キャプチャ画像</h3>
-                <div class="capture-container relative bg-white border border-gray-200 rounded-lg overflow-hidden" style="max-width: 800px; margin: 0 auto;">
-                    <canvas id="captureCanvas" class="block w-full h-auto cursor-crosshair"></canvas>
-                    <div id="captureZoomControls" class="absolute top-2 right-2 flex space-x-1 bg-white bg-opacity-90 rounded-lg p-1">
-                        <button id="captureZoomInButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームイン">+</button>
-                        <button id="captureZoomResetButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="リセット">⌂</button>
-                        <button id="captureZoomOutButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームアウト">-</button>
-                    </div>
-                </div>                <!-- デバッグ情報表示エリア -->
-                <div id="captureDebugInfo" class="mt-2 p-2 bg-gray-100 text-xs text-gray-600 font-mono rounded">
-                    <div>ズーム: <span id="debugZoom">1.000</span> | オフセット: (<span id="debugOffsetX">0</span>, <span id="debugOffsetY">0</span>)</div>
-                    <div>画像サイズ: <span id="debugImageSize">-</span> | キャンバスサイズ: <span id="debugCanvasSize">-</span></div>
-                    <div>最後のクリック: (<span id="debugLastClick">-</span>) | マウス: (<span id="debugMousePos">-</span>)</div>
-                    <div>変換テスト: Canvas→Image (<span id="debugTransformTest">-</span>)</div>
-                </div>
-                <p class="text-xs text-gray-500 mt-2 text-center">ドラッグして移動、ボタンでズーム調整</p>
+        
+        <!-- 操作手順インジケーター -->
+        <div class="step-indicator">
+            <div class="step-item active" id="stepVideo">
+                <div class="step-icon">1</div>
+                <span>動画読み込み</span>
+            </div>
+            <div class="step-item" id="stepCapture">
+                <div class="step-icon">2</div>
+                <span>フレームキャプチャ</span>
+            </div>
+            <div class="step-item" id="stepMeasurement">
+                <div class="step-icon">3</div>
+                <span>寸法測定</span>
             </div>
         </div>
+        
+        <!-- メインインストラクション -->
+        <div class="instruction-panel">
+            <div class="instruction-icon">ℹ️</div>
+            <div id="commonInstructionText">動画ファイルを選択してください。</div>
+        </div>
+        
+        <!-- メインコンテンツグリッド -->
+        <div class="content-grid">
+            <!-- メインコンテンツエリア -->
+            <div class="main-content">
+                <!-- 動画セクション -->
+                <section class="video-section">
+                    <div class="section-header">
+                        <div class="section-icon">📹</div>
+                        <h2>動画プレイヤー</h2>
+                    </div>
+                      <div class="form-group">
+                        <label for="videoFileInput" class="form-label">動画ファイル選択</label>
+                        <input type="file" id="videoFileInput" accept="video/*" class="file-input">
+                    </div>
+                    
+                    <!-- 動画プレイヤー -->
+                    <div class="video-player-container" id="videoPlayerContainer" style="display: none;">
+                        <video id="videoElement" controls style="width: 100%; max-width: 100%; height: auto;">
+                            お使いのブラウザは動画の再生に対応していません。
+                        </video>
+                    </div>
+                    
+                    <div class="canvas-container" id="videoCanvasContainer">
+                        <canvas id="videoCanvas" style="max-width: 100%; height: auto; display: none;"></canvas>
+                        <div class="canvas-placeholder" id="videoPlaceholder">
+                            動画を読み込むとここに表示されます
+                        </div>
+                    </div>
+                    
+                    <div class="video-controls" id="videoControls">
+                        <div class="control-group">
+                            <button id="playPauseButton" class="btn btn-primary" disabled>
+                                ▶ 再生
+                            </button>
+                            <button id="captureButton" class="btn btn-success" disabled>
+                                📸 キャプチャ
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="progressSlider" class="form-label">再生位置</label>
+                            <input type="range" id="progressSlider" min="0" max="1" step="0.001" value="0" class="slider" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">動画ステータス</div>
+                        <div class="status-value" id="videoStatusText">待機中</div>
+                    </div>
+                </section>
+                
+                <!-- キャプチャセクション -->
+                <section class="capture-section">
+                    <div class="section-header">
+                        <div class="section-icon">📸</div>
+                        <h2>フレームキャプチャ</h2>
+                    </div>
+                    
+                    <div class="canvas-container" id="captureCanvasContainer">
+                        <canvas id="captureCanvas" style="max-width: 100%; height: auto;"></canvas>
+                        <div class="canvas-placeholder" id="capturePlaceholder">
+                            フレームをキャプチャするとここに表示されます
+                        </div>
+                    </div>
+                    
+                    <div class="capture-controls">
+                        <div class="control-info">
+                            <p><strong>操作方法:</strong></p>
+                            <ul>
+                                <li>マウスホイール: ズーム</li>
+                                <li>ドラッグ: パン（移動）</li>
+                                <li>測定モード時: クリックで測定点配置</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">キャプチャステータス</div>
+                        <div class="status-value" id="captureStatusText">待機中</div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- サイドバー -->
+            <div class="sidebar">
+                <!-- 測定セクション -->
+                <section class="measurement-section">
+                    <div class="section-header">
+                        <div class="section-icon">📏</div>
+                        <h2>寸法測定</h2>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="startMeasurementButton" class="btn btn-primary btn-full" disabled>
+                            測定開始
+                        </button>
+                        <button id="clearMeasurementButton" class="btn btn-secondary btn-full">
+                            測定クリア
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="refObjectActualSizeInput" class="form-label">
+                            参照オブジェクトサイズ (mm)
+                        </label>
+                        <input type="number" id="refObjectActualSizeInput" class="form-input" 
+                               placeholder="例: 100" min="0" step="0.1">
+                        <small class="form-help">
+                            既知のサイズを持つオブジェクトの実際の寸法を入力
+                        </small>
+                    </div>
+                    
+                    <div class="measurement-instructions">
+                        <h4>測定手順:</h4>
+                        <ol>
+                            <li>測定開始ボタンをクリック</li>
+                            <li>参照オブジェクトの両端をクリック</li>
+                            <li>参照サイズを入力</li>
+                            <li>測定対象の両端をクリック</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">測定ステータス</div>
+                        <div class="status-value" id="dimensionStatusText">待機中</div>
+                    </div>
+                </section>
+                
+                <!-- 結果セクション -->
+                <section class="results-section">
+                    <div class="section-header">
+                        <div class="section-icon">📊</div>
+                        <h2>測定結果</h2>
+                    </div>
+                    
+                    <div class="measurement-results">
+                        <div class="result-row">
+                            <span>参照線長さ (pixel):</span>
+                            <span id="refPixelLengthText">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span>測定線長さ (pixel):</span>
+                            <span id="targetPixelLengthText">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span>スケール (mm/pixel):</span>
+                            <span id="scaleText">-</span>
+                        </div>
+                        <div class="result-row">
+                            <span>推定サイズ:</span>
+                            <span id="estimatedSizeText">-</span>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- デバッグセクション -->
+                <section class="debug-section" id="debugSection">
+                    <div class="section-header">
+                        <div class="section-icon">🔧</div>
+                        <h2>デバッグ情報</h2>
+                    </div>
+                    
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-label">測定モード</div>
+                            <div class="status-value" id="debugMeasurementState">none</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">ズームレベル</div>
+                            <div class="status-value" id="debugZoomLevel">1.0</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">キャプチャサイズ</div>
+                            <div class="status-value" id="debugCaptureSize">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">ビューオフセット</div>
+                            <div class="status-value" id="debugViewOffset">0, 0</div>
+                        </div>
+                    </div>
+                    
+                    <details>
+                        <summary>詳細デバッグ情報</summary>
+                        <pre class="debug-panel" id="debugInfo"></pre>
+                    </details>
+                </section>
+            </div>
+        </div>
+    </div>
+    
+    <!-- エラー表示用モーダル -->
+    <div id="errorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>エラー</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeErrorModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
         
         <div id="loadingIndicator" class="hidden items-center justify-center mb-4">
             <div class="loader"></div><span class="text-gray-600">動画を処理中...</span>
@@ -135,21 +551,31 @@
             <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
                 <svg id="closeMessageButton" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
             </span>
-        </div>
-    </div>    <!-- Scripts -->
-    <script src="js/globals.js"></script>
-    <script src="js/dom-elements.js"></script>
-    <script src="js/utils/math.js"></script>
-    <script src="js/utils/ui.js"></script>
-    <script src="js/utils/canvas.js"></script>
-    <script src="js/components/zoom-pan.js"></script>
-    <script src="js/components/capture-zoom-pan.js"></script>
-    <script src="js/components/capture-marking.js"></script>
-    <script src="js/components/ai-comment.js"></script>
-    <script src="js/analysis/dimension.js"></script>
-    <script src="js/analysis/oncoming.js"></script>
-    <script src="js/core/video-handler.js"></script>
-    <script src="js/core/mode-manager.js"></script>
-    <script src="js/core/app.js"></script>
+        </div>    </div>
+    
+    <!-- Scripts -->
+    <script type="module">
+        import { App } from './assets/js/core/app.js';
+        
+        // アプリケーション初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('🚀 CarScan Pro 起動中...');
+                const app = new App();
+                const success = await app.initialize();
+                
+                if (success) {
+                    console.log('✅ CarScan Pro 起動完了');
+                } else {
+                    console.error('❌ CarScan Pro 起動失敗');
+                }
+                
+                // グローバルアクセス用（デバッグ）
+                window.carScanApp = app;
+            } catch (error) {
+                console.error('❌ アプリケーション初期化エラー:', error);
+            }
+        });
+    </script>
 </body>
 </html>

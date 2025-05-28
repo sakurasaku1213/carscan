@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarScan Pro - キャプチャ機能テスト</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-4xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CarScan Pro</h1>
+            <p class="text-gray-600 mt-2">キャプチャ機能動作テスト</p>
+        </header>
+
+        <div class="mb-6">
+            <label for="videoFile" class="block text-sm font-medium text-gray-700 mb-1">MP4ファイルを選択:</label>
+            <input type="file" id="videoFile" accept="video/mp4" class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100 transition-colors duration-150"/>
+        </div>
+
+        <div id="videoArea" class="mb-6 video-container">
+            <video id="videoPlayer" controls>
+                <p class="text-center text-gray-500 p-4">動画ファイルを選択すると、ここに表示されます。</p>
+            </video>
+            <canvas id="videoCanvas"></canvas>
+        </div>
+
+        <!-- キャプチャ画像表示エリア -->
+        <div id="captureImageArea" class="mb-6 hidden">
+            <div class="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">📸 キャプチャ画像</h3>
+                <div class="capture-container relative bg-white border border-gray-200 rounded-lg overflow-hidden" style="max-width: 800px; margin: 0 auto;">
+                    <canvas id="captureCanvas" class="block w-full h-auto cursor-crosshair"></canvas>
+                    <div id="captureZoomControls" class="absolute top-2 right-2 flex space-x-1 bg-white bg-opacity-90 rounded-lg p-1">
+                        <button id="captureZoomInButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームイン">+</button>
+                        <button id="captureZoomResetButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="リセット">⌂</button>
+                        <button id="captureZoomOutButton" class="p-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm rounded" title="ズームアウト">-</button>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">ドラッグして移動、ボタンでズーム調整</p>
+            </div>
+        </div>
+
+        <!-- テスト用ボタン -->
+        <div class="mb-6 space-x-2">
+            <button id="testCaptureButton" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150">
+                フレームキャプチャテスト
+            </button>
+            <button id="testMarkingButton" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150">
+                マーキングモード切替
+            </button>
+            <button id="testResetButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-150">
+                リセット
+            </button>
+        </div>
+
+        <!-- デバッグ情報 -->
+        <div id="debugInfo" class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">デバッグ情報</h3>
+            <div id="debugText" class="text-xs text-gray-600 font-mono">
+                動画を読み込んでテストしてください
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/globals.js"></script>
+    <script src="js/dom-elements.js"></script>
+    <script src="js/utils/math.js"></script>
+    <script src="js/utils/ui.js"></script>
+    <script src="js/utils/canvas.js"></script>
+    <script src="js/components/capture-zoom-pan.js"></script>
+    <script src="js/components/capture-marking.js"></script>
+    <script src="js/core/video-handler.js"></script>
+
+    <script>
+        // テスト用のシンプルな初期化
+        let isMarkingMode = false;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Capture test page loaded');
+            
+            // 基本的な初期化
+            if (typeof initVideoHandler === 'function') {
+                initVideoHandler();
+            }
+            if (typeof initializeCaptureZoomPan === 'function') {
+                initializeCaptureZoomPan();
+            }
+            if (typeof initializeCaptureMarking === 'function') {
+                initializeCaptureMarking();
+            }
+            
+            // テストボタンイベント
+            document.getElementById('testCaptureButton').addEventListener('click', function() {
+                console.log('🧪 Test capture button clicked');
+                if (videoPlayer && videoPlayer.readyState >= 2) {
+                    if (typeof captureFrameToImageArea === 'function') {
+                        captureFrameToImageArea();
+                        updateDebugInfo('Frame captured successfully');
+                    } else {
+                        updateDebugInfo('ERROR: captureFrameToImageArea function not found');
+                    }
+                } else {
+                    updateDebugInfo('ERROR: Video not ready or not loaded');
+                }
+            });
+            
+            document.getElementById('testMarkingButton').addEventListener('click', function() {
+                isMarkingMode = !isMarkingMode;
+                console.log('🧪 Test marking mode:', isMarkingMode);
+                if (typeof setCaptureMarkingMode === 'function') {
+                    setCaptureMarkingMode(isMarkingMode, 'test');
+                    updateDebugInfo(`Marking mode: ${isMarkingMode ? 'ON' : 'OFF'}`);
+                } else {
+                    updateDebugInfo('ERROR: setCaptureMarkingMode function not found');
+                }
+            });
+            
+            document.getElementById('testResetButton').addEventListener('click', function() {
+                console.log('🧪 Test reset button clicked');
+                if (typeof hideCaptureImage === 'function') {
+                    hideCaptureImage();
+                }
+                if (typeof setCaptureMarkingMode === 'function') {
+                    setCaptureMarkingMode(false);
+                }
+                isMarkingMode = false;
+                updateDebugInfo('Reset completed');
+            });
+            
+            updateDebugInfo('Test page initialized successfully');
+        });
+        
+        function updateDebugInfo(message) {
+            const debugText = document.getElementById('debugText');
+            if (debugText) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugText.innerHTML += `<br/>[${timestamp}] ${message}`;
+                debugText.scrollTop = debugText.scrollHeight;
+            }
+        }
+        
+        // テスト用のキャプチャクリック処理
+        function handleOncomingCaptureClick(point, pointCount) {
+            updateDebugInfo(`Capture click: Point ${pointCount} at (${point.x.toFixed(1)}, ${point.y.toFixed(1)})`);
+        }
+    </script>
+</body>
+</html>
