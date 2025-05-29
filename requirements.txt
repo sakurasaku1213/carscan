@@ -1,0 +1,57 @@
+# 弁護士基準損害賠償計算システム - 依存関係
+# Core UI Framework
+customtkinter>=5.2.0
+
+# Data Processing & Calculation
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+
+# PDF Generation
+reportlab>=4.0.0
+pypdf>=3.0.0
+
+# Configuration & Validation
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Logging & Monitoring
+structlog>=23.0.0
+
+# Date & Time Processing
+python-dateutil>=2.8.0
+
+# Testing Framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# Code Quality
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Build & Distribution
+pyinstaller>=5.13.0
+setuptools>=68.0.0
+
+# Scientific Computing (for advanced calculations)
+scipy>=1.11.0
+
+# GUI Enhancements
+pillow>=10.0.0
+matplotlib>=3.7.0
+
+# JSON Schema Validation
+jsonschema>=4.19.0
+
+# Cryptography (for data protection)
+cryptography>=41.0.0
+
+# System Integration
+psutil>=5.9.0
+
+# Development Tools
+autopep8>=2.0.0
+isort>=5.12.0

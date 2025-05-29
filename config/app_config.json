@@ -1,0 +1,202 @@
+{
+  "version": "1.0.0",
+  "app_name": "弁護士基準損害賠償計算システム",
+  "last_updated": "2024-01-01T00:00:00",
+  "database": {
+    "db_path": "compensation_cases.db",
+    "backup_enabled": true,
+    "backup_interval_hours": 24,
+    "backup_retention_days": 30,
+    "auto_optimize": true,
+    "connection_timeout": 30.0,
+    "file_path": "database/cases_v2.db",
+    "backup_dir": "database/backups",
+    "auto_backup_interval_hours": 24,
+    "max_backup_files": 7,
+    "connection_timeout_seconds": 30,
+    "journal_mode": "WAL",
+    "enable_foreign_keys": true
+  },
+  "ui": {
+    "theme": "light",
+    "language": "ja",
+    "window_width": 1200,
+    "window_height": 800,
+    "font_size": 10,
+    "enable_tooltips": true,
+    "auto_save_interval": 300,
+    "appearance_mode": "light",
+    "font_family": "Meiryo UI",
+    "default_window_width": 1200,
+    "default_window_height": 800,
+    "auto_calculate": true,
+    "export_path": "exports",
+    "template_dir": "templates/ui",
+    "recent_files_max": 10
+  },
+  "calculation": {
+    "default_standard": "弁護士基準",
+    "enable_auto_calculation": true,
+    "precision_digits": 0,
+    "rounding_method": "round",
+    "validation_enabled": true,
+    "default_interest_rate_pa": 3.0,
+    "leibniz_coefficients_file": "config/leibniz_coefficients.json",
+    "lawyer_fee_calculation_standard": "old_standard",
+    "enable_detailed_calculation_log": false
+  },
+  "logging": {
+    "level": "INFO",
+    "file_enabled": true,
+    "file_path": "logs/app.log",
+    "max_file_size": 10485760,
+    "backup_count": 5,
+    "console_enabled": true,
+    "format": "%(asctime)s - [%(levelname)s] - %(name)s - (%(module)s.%(funcName)s:%(lineno)d) - %(message)s",
+    "error_log_file_path": "logs/application_errors.log"
+  },
+  "security": {
+    "enable_data_encryption": false,
+    "backup_encryption": false,
+    "session_timeout": 3600,
+    "master_key_env_var": "COMP_SYS_MASTER_KEY",
+    "secure_db_path": "database/secure_storage.db",
+    "audit_log_file": "logs/security_audit.log",
+    "password_policy": {
+      "min_length": 12,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_digit": true,
+      "require_special_char": true
+    },
+    "session_timeout_minutes": 30,
+    "max_login_attempts": 5,
+    "lockout_duration_minutes": 15
+  },
+  "custom_settings": {},
+  "error_handling": {
+    "log_file": "logs/critical_system_errors.log",
+    "default_severity": "MEDIUM",
+    "report_dir": "reports/error_details",
+    "enable_recovery_suggestions": true,
+    "max_history_items": 200
+  },
+  "report": {
+    "default_output_directory": "reports/generated",
+    "excel_template_path": "templates/excel/standard_report_template.xlsx",
+    "pdf_template_path": "templates/pdf/standard_report_template.json",
+    "include_charts_in_excel": true,
+    "include_detailed_calculation_in_pdf": false,
+    "company_logo_path": "assets/company_logo.png",
+    "default_author": "弁護士法人〇〇法律事務所",
+    "font_name_gothic": "IPAexGothic",
+    "font_path_gothic": "fonts/ipaexg.ttf",
+    "excel_report_items": [
+        "header", 
+        "case_summary", 
+        "basic_info", 
+        "medical_info", 
+        "income_info", 
+        "calculation_summary_table", 
+        "detailed_calculation_table", 
+        "charts", 
+        "footer"
+    ],      "pdf_report_items": [
+        "logo", 
+        "header_title", 
+        "case_info_header", 
+        "basic_info_table", 
+        "medical_info_table", 
+        "income_info_table", 
+        "calculation_results_table", 
+        "disclaimer_footer"
+      ],
+      "excel_templates": {
+        "traffic_accident": "templates/excel/traffic_accident_template.xlsx",
+        "work_accident": "templates/excel/work_accident_template.xlsx", 
+        "medical_malpractice": "templates/excel/medical_malpractice_template.xlsx",
+        "default": "templates/excel/standard_report_template.xlsx"
+      },
+      "pdf_templates": {
+        "traffic_accident": "templates/pdf/traffic_accident_template.json",
+        "work_accident": "templates/pdf/work_accident_template.json",
+        "medical_malpractice": "templates/pdf/medical_malpractice_template.json", 
+        "default": "templates/pdf/standard_report_template.json"
+      },
+      "enable_template_customization": true,
+      "auto_create_missing_templates": true,
+      "template_data_mapping": {
+        "traffic_accident": {
+          "title": "交通事故損害賠償計算書",
+          "special_notes": "自賠責保険・任意保険との調整を考慮",
+          "required_fields": "事故状況,過失割合,車両損害"
+        },
+        "work_accident": {
+          "title": "労災事故損害賠償計算書", 
+          "special_notes": "労災給付との調整・特別支給金の取扱い",
+          "required_fields": "災害発生状況,労災認定,事業主責任"
+        },
+        "medical_malpractice": {
+          "title": "医療過誤損害賠償計算書",
+          "special_notes": "因果関係・過失の程度・寄与度減額を考慮",
+          "required_fields": "医療行為,過誤内容,因果関係,鑑定結果"
+        }
+      },
+      "excel_column_widths": {
+        "A": 20.0, 
+        "B": 15.0, 
+        "C": 40.0, 
+        "D": 25.0, 
+        "E": 15.0, 
+        "F": 15.0, 
+        "G": 15.0, 
+        "H": 15.0
+      },
+      "excel_row_heights": {
+        "header": 25.0, 
+        "subheader": 20.0, 
+        "data": 18.0, 
+        "footer": 15.0
+      },
+      "excel_color_scheme": {
+        "header_bg": "4472C4", 
+        "subheader_bg": "8DB4E2", 
+        "amount_bg": "FFF2CC", 
+        "total_bg": "D5E8D4",
+        "header_text": "FFFFFF", 
+        "body_text": "000000"
+      },
+      "pdf_page_margins": {
+        "top": 72, 
+        "bottom": 72, 
+        "left": 72, 
+        "right": 72
+      },
+      "pdf_font_sizes": {
+        "title": 18, 
+        "header": 14, 
+        "subheader": 12, 
+        "body": 10, 
+        "small": 8, 
+        "footer": 9
+      },
+      "pdf_line_spacing": 1.2,
+      "pdf_table_style": {
+        "grid_color": "black", 
+        "header_bg": "lightgrey",
+        "alt_row_bg": "whitesmoke", 
+        "border_width": "0.5"
+      }
+  },
+  "build": {
+    "output_dir": "dist",
+    "executable_name": "CompensationCalculator",
+    "include_files": ["config/", "database/standards/", "templates/", "assets/"],
+    "icon_path": "assets/app_icon.ico",
+    "enable_console": true,
+    "log_level": "INFO",
+    "clean_before_build": true,
+    "test_on_build": true,
+    "generate_report": true
+  }
+}

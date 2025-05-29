@@ -1,0 +1,45 @@
+{
+  "app_name": "CompensationCalculator",
+  "version": "1.0.0",
+  "main_script": "lawyer_compensation_calculator.py",
+  "icon_file": "Icon1.ico",
+  "exclude_modules": [
+    "matplotlib",
+    "numpy.tests",
+    "scipy",
+    "pandas",
+    "jupyter",
+    "IPython",
+    "notebook",
+    "qtconsole",
+    "spyder",
+    "pydoc",
+    "doctest",
+    "unittest.mock",
+    "test",
+    "tests",
+    "tkinter.test",
+    "asyncio",
+    "concurrent.futures",
+    "multiprocessing",
+    "xml",
+    "html",
+    "http",
+    "urllib"
+  ],
+  "include_files": [
+    "config/",
+    "*.json",
+    "README_*.md"
+  ],
+  "optimization_level": 2,
+  "console": false,
+  "onefile": true,
+  "additional_options": [
+    "--strip",
+    "--noupx"
+  ],
+  "runtime_tmpdir": null,
+  "upx_enabled": false,
+  "compression_level": 6
+}

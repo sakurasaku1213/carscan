@@ -1,0 +1,16 @@
+# GitHubアップロード用コマンド
+# 以下のコマンドを順番に実行してください（YOUR_USERNAMEとYOUR_REPOSITORY_NAMEを実際の値に置き換える）
+
+# 1. リモートリポジトリを追加
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+
+# 2. ブランチ名をmainに変更（GitHubの標準）
+git branch -M main
+
+# 3. ファイルをプッシュ
+git push -u origin main
+
+# 例：ユーザー名がuser123、リポジトリ名がlawyer-calculatorの場合
+# git remote add origin https://github.com/user123/lawyer-calculator.git
+# git branch -M main
+# git push -u origin main
